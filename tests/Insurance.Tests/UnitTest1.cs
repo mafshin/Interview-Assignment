@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Insurance.Api.Controllers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -37,6 +38,25 @@ namespace Insurance.Tests
                 actual: result.InsuranceValue
             );
         }
+
+         [Fact]
+        public void CalculateInsurance_GivenSalesPriceLessThan500AndProductTypeBeingLaptop_ShouldInsuranceCostBeFiveHundred()
+        {
+            const float expectedInsuranceValue = 500;
+
+            var dto = new HomeController.InsuranceDto
+                      {
+                          ProductId = 2,
+                      };
+            var sut = new HomeController();
+
+            var result = sut.CalculateInsurance(dto);
+
+            Assert.Equal(
+                expected: expectedInsuranceValue,
+                actual: result.InsuranceValue
+            );
+        }
     }
 
     public class ControllerTestFixture: IDisposable
@@ -62,6 +82,25 @@ namespace Insurance.Tests
     {
         public void Configure(IApplicationBuilder app)
         {
+            var sampleProducts = new Dictionary<int, object>()
+            {
+                { 1, new
+                    {
+                        id = 1,
+                        name = "Test Product",
+                        productTypeId = 1,
+                        salesPrice = 750
+                    }
+                },
+                { 2, new
+                    {
+                        id = 2,
+                        name = "Test Product",
+                        productTypeId = 2, // laptop
+                        salesPrice = 250
+                    }
+                }
+            };
             app.UseRouting();
             app.UseEndpoints(
                 ep =>
@@ -71,13 +110,7 @@ namespace Insurance.Tests
                         context =>
                         {
                             int productId = int.Parse((string) context.Request.RouteValues["id"]);
-                            var product = new
-                                          {
-                                              id = productId,
-                                              name = "Test Product",
-                                              productTypeId = 1,
-                                              salesPrice = 750
-                                          };
+                            var product = sampleProducts[productId];
                             return context.Response.WriteAsync(JsonConvert.SerializeObject(product));
                         }
                     );
@@ -91,6 +124,11 @@ namespace Insurance.Tests
                                                    {
                                                        id = 1,
                                                        name = "Test type",
+                                                       canBeInsured = true
+                                                   },
+                                                   new {
+                                                       id = 2,
+                                                       name = "Laptops",
                                                        canBeInsured = true
                                                    }
                                                };
