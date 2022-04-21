@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json.Serialization;
@@ -28,9 +29,10 @@ namespace Insurance.Api.Controllers
                 if (toInsure.SalesPrice >= 2000)
                     if (toInsure.ProductTypeHasInsurance)
                         toInsure.InsuranceValue += 2000;
-                if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones" && toInsure.ProductTypeHasInsurance)
-                    toInsure.InsuranceValue += 500;
             }
+
+            if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones" && toInsure.ProductTypeHasInsurance)
+                toInsure.InsuranceValue += 500;
 
             return toInsure;
         }
