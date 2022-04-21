@@ -57,6 +57,25 @@ namespace Insurance.Tests
                 actual: result.InsuranceValue
             );
         }
+
+        [Fact]
+        public void CalculateInsurance_GivenProductTypeHasNoInsurance_ShouldInsuranceBeZero()
+        {
+            const float expectedInsuranceValue = 0;
+
+            var dto = new HomeController.InsuranceDto
+                      {
+                          ProductId = 3,
+                      };
+            var sut = new HomeController();
+
+            var result = sut.CalculateInsurance(dto);
+
+            Assert.Equal(
+                expected: expectedInsuranceValue,
+                actual: result.InsuranceValue
+            );
+        }
     }
 
     public class ControllerTestFixture: IDisposable
@@ -95,9 +114,17 @@ namespace Insurance.Tests
                 { 2, new
                     {
                         id = 2,
-                        name = "Test Product",
+                        name = "Test Product 2",
                         productTypeId = 2, // laptop
                         salesPrice = 250
+                    }
+                },
+                { 3, new
+                    {
+                        id = 3,
+                        name = "Test Product 3",
+                        productTypeId = 3, // smartphone
+                        salesPrice = 600
                     }
                 }
             };
@@ -130,6 +157,11 @@ namespace Insurance.Tests
                                                        id = 2,
                                                        name = "Laptops",
                                                        canBeInsured = true
+                                                   },
+                                                   new {
+                                                       id = 3,
+                                                       name = "Smartphones", 
+                                                       canBeInsured = false
                                                    }
                                                };
                             return context.Response.WriteAsync(JsonConvert.SerializeObject(productTypes));

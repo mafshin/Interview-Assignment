@@ -31,7 +31,7 @@ namespace Insurance.Api.Controllers
                         toInsure.InsuranceValue += 2000;
             }
 
-            if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones" && toInsure.ProductTypeHasInsurance)
+            if ((toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones") && toInsure.ProductTypeHasInsurance)
                 toInsure.InsuranceValue += 500;
 
             return toInsure;
