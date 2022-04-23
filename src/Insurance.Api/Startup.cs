@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Insurance.Api.Models;
+using Microsoft.Extensions.Options;
 
 namespace Insurance.Api
 {
@@ -29,6 +30,12 @@ namespace Insurance.Api
             services.AddControllers();
 
             services.Configure<AppConfiguration>(Configuration);
+
+            services.AddHttpClient("ProductApiClient", (isp, client) => {
+               var appConfiguration =  isp.GetService<IOptions<AppConfiguration>>();
+
+               client.BaseAddress = new Uri(appConfiguration.Value.ProductApi);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

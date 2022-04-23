@@ -10,9 +10,9 @@ namespace Insurance.Api
 {
     public static class BusinessRules
     {
-        public static void GetProductType(string baseAddress, int productID, ref HomeController.InsuranceDto insurance)
+        public static void GetProductType(IHttpClientFactory httpClientFactory, int productID, ref HomeController.InsuranceDto insurance)
         {
-            HttpClient client = new HttpClient{ BaseAddress = new Uri(baseAddress)};
+            HttpClient client =  httpClientFactory.CreateClient("ProductApiClient");
             string json = client.GetAsync("/product_types").Result.Content.ReadAsStringAsync().Result;
             var collection = JsonConvert.DeserializeObject<dynamic>(json);
 
@@ -35,9 +35,9 @@ namespace Insurance.Api
             }
         }
 
-        public static void GetSalesPrice(string baseAddress, int productID, ref HomeController.InsuranceDto insurance)
+        public static void GetSalesPrice(IHttpClientFactory httpClientFactory, int productID, ref HomeController.InsuranceDto insurance)
         {
-            HttpClient client = new HttpClient{ BaseAddress = new Uri(baseAddress)};
+            HttpClient client =  httpClientFactory.CreateClient("ProductApiClient");
             string json = client.GetAsync(string.Format("/products/{0:G}", productID)).Result.Content.ReadAsStringAsync().Result;
             var product = JsonConvert.DeserializeObject<dynamic>(json);
 

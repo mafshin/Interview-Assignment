@@ -11,8 +11,11 @@ namespace Insurance.Api.Controllers
 {
     public class HomeController: BaseController<HomeController>
     {
-        public HomeController(IOptions<AppConfiguration> appConfiguration, ILogger<HomeController> logger) : base(appConfiguration, logger)
+        private readonly IHttpClientFactory httpClientFactory;
+        public HomeController(IOptions<AppConfiguration> appConfiguration, ILogger<HomeController> logger, IHttpClientFactory httpClientFactory) 
+            : base(appConfiguration, logger)
         {
+            this.httpClientFactory = httpClientFactory;
         }
 
         [HttpPost]
@@ -26,8 +29,8 @@ namespace Insurance.Api.Controllers
 
             int productId = toInsure.ProductId;
 
-            BusinessRules.GetProductType(AppConfiguration.Value.ProductApi, productId, ref toInsure);
-            BusinessRules.GetSalesPrice(AppConfiguration.Value.ProductApi, productId, ref toInsure);
+            BusinessRules.GetProductType(httpClientFactory, productId, ref toInsure);
+            BusinessRules.GetSalesPrice(httpClientFactory, productId, ref toInsure);
 
             float insurance = 0f;
 

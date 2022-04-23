@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Xunit;
+using System.Net.Http;
+using Moq;
 
 namespace Insurance.Tests
 {
@@ -58,7 +60,14 @@ namespace Insurance.Tests
                 ProductId = scenario.ProductId
             };
 
-            var sut = new HomeController(configs, logger);
+            var clinet =new HttpClient();
+            clinet.BaseAddress = new Uri(this._fixture.ApiUrl);
+
+            Mock<IHttpClientFactory> factory = new Mock<IHttpClientFactory>();
+            factory.Setup(x => x.CreateClient(It.IsAny<string>()))
+            .Returns(clinet);
+
+            var sut = new HomeController(configs, logger, factory.Object);
 
             var result = sut.CalculateInsurance(dto);
 

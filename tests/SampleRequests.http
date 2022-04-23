@@ -12,5 +12,5 @@ POST http://localhost:5000/api/insurance/product
 Content-Type: application/json
 
 {
-    "ProductId": 837856
+    "ProductId": 735246
 }
