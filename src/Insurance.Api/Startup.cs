@@ -36,6 +36,8 @@ namespace Insurance.Api
 
                client.BaseAddress = new Uri(appConfiguration.Value.ProductApi);
             });
+
+            services.AddSingleton<IProductApiClient, ProductApiClient>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -5,27 +5,33 @@ using Insurance.Api.Models;
 
 namespace Insurance.Api
 {
-    public static class BusinessRules
+    public class ProductApiClient : IProductApiClient
     {
-        public static async Task<ProductType> GetProductType(IHttpClientFactory httpClientFactory, int productID)
+        private readonly IHttpClientFactory httpClientFactory;
+
+        public ProductApiClient(IHttpClientFactory clientFactory)
         {
-            var product = await GetProduct(httpClientFactory, productID).ConfigureAwait(false);
+            this.httpClientFactory = clientFactory;
+        }
+        public async Task<ProductType> GetProductTypeByProductId(int productID)
+        {
+            var product = await GetProductById(productID).ConfigureAwait(false);
 
             int productTypeId = product.productTypeId;
 
-            ProductType productType = await GetProductTypeById(httpClientFactory, productTypeId).ConfigureAwait(false);
+            ProductType productType = await GetProductTypeById(productTypeId).ConfigureAwait(false);
 
             return productType;
         }
 
-        public static async Task<float> GetSalesPrice(IHttpClientFactory httpClientFactory, int productID)
+        public async Task<float> GetSalesPriceByProductId(int productID)
         {
-            dynamic product = await GetProduct(httpClientFactory, productID).ConfigureAwait(false);
+            dynamic product = await GetProductById(productID).ConfigureAwait(false);
 
             return product.salesPrice;
         }
 
-        private static async Task<ProductType> GetProductTypeById(IHttpClientFactory httpClientFactory, int productTypeId)
+        public async Task<ProductType> GetProductTypeById(int productTypeId)
         {
             HttpClient client = httpClientFactory.CreateClient("ProductApiClient");
             string json = await client.GetStringAsync($"/product_types/{productTypeId}").ConfigureAwait(false);
@@ -33,7 +39,7 @@ namespace Insurance.Api
             return productType;
         }
 
-        private static async Task<dynamic> GetProduct(IHttpClientFactory httpClientFactory, int productID)
+        public async Task<dynamic> GetProductById(int productID)
         {
             HttpClient client = httpClientFactory.CreateClient("ProductApiClient");
             string json = await client.GetStringAsync(string.Format("/products/{0:G}", productID)).ConfigureAwait(false);

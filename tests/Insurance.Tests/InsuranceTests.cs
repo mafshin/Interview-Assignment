@@ -15,6 +15,7 @@ using System.Net.Http;
 using Moq;
 using System.Threading.Tasks;
 using System.Linq;
+using Insurance.Api;
 
 namespace Insurance.Tests
 {
@@ -69,7 +70,9 @@ namespace Insurance.Tests
             factory.Setup(x => x.CreateClient(It.IsAny<string>()))
             .Returns(clinet);
 
-            var sut = new HomeController(configs, logger, factory.Object);
+            ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+
+            var sut = new HomeController(configs, logger, productApiClient);
 
             var result = await sut.CalculateInsurance(dto);
 

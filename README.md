@@ -19,5 +19,8 @@ This allows optimum reusing of clients already created and also leaves the confi
 central place.
 3. All operations in Api which involves IO (disk or remote resource) must be done asynchronously.
 Async operations allows better usage of system resources while Api is waiting on the response from IO operations.
+4. Initially BusinessRules class was all about accessing Product Api actions so a ProductApiClient is 
+introduced which simplifies access to Product Api actions.
 
-For the above refactoring, method extraction is used.
+For the above refactoring, method extraction is used. For ProductApiClient a Pull Up approach is used
+to extract an interface to decouple HomeController from Product Api implementaiton. 
