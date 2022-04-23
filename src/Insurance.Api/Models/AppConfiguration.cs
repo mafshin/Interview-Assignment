@@ -10,5 +10,4 @@ namespace Insurance.Api.Models
         /// </summary>
         public string ProductApi {get;set;}
     }
-
 }

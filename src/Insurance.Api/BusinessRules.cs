@@ -1,47 +1,44 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
-using Insurance.Api.Controllers;
 using Newtonsoft.Json;
+using Insurance.Api.Models;
 
 namespace Insurance.Api
 {
     public static class BusinessRules
     {
-        public static void GetProductType(IHttpClientFactory httpClientFactory, int productID, ref HomeController.InsuranceDto insurance)
+        public static async Task<ProductType> GetProductType(IHttpClientFactory httpClientFactory, int productID)
         {
-            HttpClient client =  httpClientFactory.CreateClient("ProductApiClient");
-            string json = client.GetAsync("/product_types").Result.Content.ReadAsStringAsync().Result;
-            var collection = JsonConvert.DeserializeObject<dynamic>(json);
-
-            json = client.GetAsync(string.Format("/products/{0:G}", productID)).Result.Content.ReadAsStringAsync().Result;
-            var product = JsonConvert.DeserializeObject<dynamic>(json);
+            var product = await GetProduct(httpClientFactory, productID).ConfigureAwait(false);
 
             int productTypeId = product.productTypeId;
-            string productTypeName = null;
-            bool hasInsurance = false;
 
-            insurance = new HomeController.InsuranceDto();
+            ProductType productType = await GetProductTypeById(httpClientFactory, productTypeId).ConfigureAwait(false);
 
-            for (int i = 0; i < collection.Count; i++)
-            {
-                if (collection[i].id == productTypeId && collection[i].canBeInsured == true)
-                {
-                    insurance.ProductTypeName = collection[i].name;
-                    insurance.ProductTypeHasInsurance = true;
-                }
-            }
+            return productType;
         }
 
-        public static void GetSalesPrice(IHttpClientFactory httpClientFactory, int productID, ref HomeController.InsuranceDto insurance)
+        public static async Task<float> GetSalesPrice(IHttpClientFactory httpClientFactory, int productID)
         {
-            HttpClient client =  httpClientFactory.CreateClient("ProductApiClient");
-            string json = client.GetAsync(string.Format("/products/{0:G}", productID)).Result.Content.ReadAsStringAsync().Result;
-            var product = JsonConvert.DeserializeObject<dynamic>(json);
+            dynamic product = await GetProduct(httpClientFactory, productID).ConfigureAwait(false);
 
-            insurance.SalesPrice = product.salesPrice;
+            return product.salesPrice;
+        }
+
+        private static async Task<ProductType> GetProductTypeById(IHttpClientFactory httpClientFactory, int productTypeId)
+        {
+            HttpClient client = httpClientFactory.CreateClient("ProductApiClient");
+            string json = await client.GetStringAsync($"/product_types/{productTypeId}").ConfigureAwait(false);
+            var productType = JsonConvert.DeserializeObject<ProductType>(json);
+            return productType;
+        }
+
+        private static async Task<dynamic> GetProduct(IHttpClientFactory httpClientFactory, int productID)
+        {
+            HttpClient client = httpClientFactory.CreateClient("ProductApiClient");
+            string json = await client.GetStringAsync(string.Format("/products/{0:G}", productID)).ConfigureAwait(false);
+            var product = JsonConvert.DeserializeObject<dynamic>(json);
+            return product;
         }
     }
 }

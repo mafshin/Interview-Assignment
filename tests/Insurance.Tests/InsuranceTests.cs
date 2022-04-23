@@ -13,6 +13,8 @@ using Microsoft.Extensions.Options;
 using Xunit;
 using System.Net.Http;
 using Moq;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Insurance.Tests
 {
@@ -51,7 +53,7 @@ namespace Insurance.Tests
 
         [Theory]
         [MemberData(nameof(GetTestData))]
-        public void CalculateInsuranceTests(TestScenario scenario)
+        public async Task CalculateInsuranceTests(TestScenario scenario)
         {
             float expectedInsuranceValue = scenario.ExpectedInsurance;
 
@@ -69,7 +71,7 @@ namespace Insurance.Tests
 
             var sut = new HomeController(configs, logger, factory.Object);
 
-            var result = sut.CalculateInsurance(dto);
+            var result = await sut.CalculateInsurance(dto);
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
@@ -198,23 +200,7 @@ namespace Insurance.Tests
                  }
                 }
             };
-            app.UseRouting();
-            app.UseEndpoints(
-                ep =>
-                {
-                    ep.MapGet(
-                        "products/{id:int}",
-                        context =>
-                        {
-                            int productId = int.Parse((string)context.Request.RouteValues["id"]);
-                            var product = sampleProducts[productId];
-                            return context.Response.WriteAsync(JsonConvert.SerializeObject(product));
-                        }
-                    );
-                    ep.MapGet(
-                        "product_types",
-                        context =>
-                        {
+
                             var productTypes = new[]
                                                {
                                                    new
@@ -234,7 +220,33 @@ namespace Insurance.Tests
                                                        canBeInsured = false
                                                    }
                                                };
+            app.UseRouting();
+            app.UseEndpoints(
+                ep =>
+                {
+                    ep.MapGet(
+                        "products/{id:int}",
+                        context =>
+                        {
+                            int productId = int.Parse((string)context.Request.RouteValues["id"]);
+                            var product = sampleProducts[productId];
+                            return context.Response.WriteAsync(JsonConvert.SerializeObject(product));
+                        }
+                    );
+                    ep.MapGet(
+                        "product_types",
+                        context =>
+                        {
                             return context.Response.WriteAsync(JsonConvert.SerializeObject(productTypes));
+                        }
+                    );
+                    ep.MapGet(
+                        "product_types/{id:int}",
+                        context => 
+                        {
+                            int productTypeId = int.Parse((string)context.Request.RouteValues["id"]);
+                            var productType = productTypes.FirstOrDefault(x => x.id == productTypeId);
+                            return context.Response.WriteAsync(JsonConvert.SerializeObject(productType));
                         }
                     );
                 }

@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using Insurance.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ namespace Insurance.Api.Controllers
 
         [HttpPost]
         [Route("api/insurance/product")]
-        public InsuranceDto CalculateInsurance([FromBody] InsuranceDto toInsure)
+        public async Task<InsuranceDto> CalculateInsurance([FromBody] InsuranceDto toInsure)
         {
             if(toInsure == null)
             {
@@ -29,8 +30,12 @@ namespace Insurance.Api.Controllers
 
             int productId = toInsure.ProductId;
 
-            BusinessRules.GetProductType(httpClientFactory, productId, ref toInsure);
-            BusinessRules.GetSalesPrice(httpClientFactory, productId, ref toInsure);
+            var productType = await BusinessRules.GetProductType(httpClientFactory, productId).ConfigureAwait(false);
+            toInsure.ProductTypeName = productType.Name;
+            toInsure.ProductTypeHasInsurance = productType.CanBeInsured;
+    
+            var salesPrice =  await BusinessRules.GetSalesPrice(httpClientFactory, productId).ConfigureAwait(false);
+            toInsure.SalesPrice = salesPrice;
 
             float insurance = 0f;
 
