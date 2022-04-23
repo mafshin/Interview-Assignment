@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Insurance.Tests
 {
-    public class InsuranceTests: IClassFixture<ControllerTestFixture>
+    public class InsuranceTests : IClassFixture<ControllerTestFixture>
     {
         private readonly ControllerTestFixture _fixture;
 
@@ -20,15 +20,34 @@ namespace Insurance.Tests
             _fixture = fixture;
         }
 
-        [Fact]
-        public void CalculateInsurance_GivenSalesPriceBetween500And2000Euros_ShouldAddThousandEurosToInsuranceCost()
+        public static IEnumerable<object[]> GetTestData()
         {
-            const float expectedInsuranceValue = 1000;
+            return new List<object[]>
+            {
+                new TestScenario(1, 1000, "CalculateInsurance_GivenSalesPriceBetween500And2000Euros_ShouldAddThousandEurosToInsuranceCost").ToObjectArray(),
+
+                new TestScenario(2, 500, "CalculateInsurance_GivenSalesPriceLessThan500AndProductTypeBeingLaptop_ShouldInsuranceCostBeFiveHundred").ToObjectArray(),
+
+                new TestScenario(3, 0, "CalculateInsurance_GivenProductTypeHasNoInsurance_ShouldInsuranceCostBeZero").ToObjectArray(),
+
+                new TestScenario(4, 0, "CalculateInsurance_GivenSalesPriceLessThan500Euros_ShouldInsuranceCostBeZero").ToObjectArray(),
+
+                new TestScenario(5, 2000, "CalculateInsurance_GivenSalesPriceGreaterThan2000Euros_ShouldInsuranceCostBe2000").ToObjectArray(),
+
+                new TestScenario(6, 2500, "CalculateInsurance_GivenSalesPriceGreaterThan2000EurosAndProductTypeBeingLaptop_ShouldInsuranceCostBe2500").ToObjectArray(),
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetTestData))]
+        public void CalculateInsuranceTests(TestScenario scenario)
+        {
+            float expectedInsuranceValue = scenario.ExpectedInsurance;
 
             var dto = new HomeController.InsuranceDto
-                      {
-                          ProductId = 1,
-                      };
+            {
+                ProductId = scenario.ProductId
+            };
             var sut = new HomeController();
 
             var result = sut.CalculateInsurance(dto);
@@ -39,46 +58,26 @@ namespace Insurance.Tests
             );
         }
 
-         [Fact]
-        public void CalculateInsurance_GivenSalesPriceLessThan500AndProductTypeBeingLaptop_ShouldInsuranceCostBeFiveHundred()
+        public class TestScenario
         {
-            const float expectedInsuranceValue = 500;
+            public TestScenario(int productId, float expectedInsurance, string testName)
+            {
+                ProductId = productId;
+                ExpectedInsurance = expectedInsurance;
+                TestName = testName;
+            }
+            public int ProductId { get; set; }
 
-            var dto = new HomeController.InsuranceDto
-                      {
-                          ProductId = 2,
-                      };
-            var sut = new HomeController();
+            public float ExpectedInsurance { get; set; }
+            public string TestName { get; }
 
-            var result = sut.CalculateInsurance(dto);
+            public override string ToString() => TestName;
 
-            Assert.Equal(
-                expected: expectedInsuranceValue,
-                actual: result.InsuranceValue
-            );
-        }
-
-        [Fact]
-        public void CalculateInsurance_GivenProductTypeHasNoInsurance_ShouldInsuranceBeZero()
-        {
-            const float expectedInsuranceValue = 0;
-
-            var dto = new HomeController.InsuranceDto
-                      {
-                          ProductId = 3,
-                      };
-            var sut = new HomeController();
-
-            var result = sut.CalculateInsurance(dto);
-
-            Assert.Equal(
-                expected: expectedInsuranceValue,
-                actual: result.InsuranceValue
-            );
+            public object[] ToObjectArray() => new object[] { this };
         }
     }
 
-    public class ControllerTestFixture: IDisposable
+    public class ControllerTestFixture : IDisposable
     {
         private readonly IHost _host;
 
@@ -126,6 +125,30 @@ namespace Insurance.Tests
                         productTypeId = 3, // smartphone
                         salesPrice = 600
                     }
+                },
+                { 4, new
+                    {
+                        id = 4,
+                        name = "Test Product 4",
+                        productTypeId = 1,
+                        salesPrice = 200
+                    }
+                },
+                { 5, new
+                 {
+                        id = 5,
+                        name = "Test Product 5",
+                        productTypeId = 1,
+                        salesPrice = 3000
+                 }
+                },
+                { 6, new
+                 {
+                        id = 6,
+                        name = "Test Product 6",
+                        productTypeId = 2, // laptop
+                        salesPrice = 4000
+                 }
                 }
             };
             app.UseRouting();
@@ -136,7 +159,7 @@ namespace Insurance.Tests
                         "products/{id:int}",
                         context =>
                         {
-                            int productId = int.Parse((string) context.Request.RouteValues["id"]);
+                            int productId = int.Parse((string)context.Request.RouteValues["id"]);
                             var product = sampleProducts[productId];
                             return context.Response.WriteAsync(JsonConvert.SerializeObject(product));
                         }
@@ -160,7 +183,7 @@ namespace Insurance.Tests
                                                    },
                                                    new {
                                                        id = 3,
-                                                       name = "Smartphones", 
+                                                       name = "Smartphones",
                                                        canBeInsured = false
                                                    }
                                                };
@@ -170,5 +193,6 @@ namespace Insurance.Tests
                 }
             );
         }
+
     }
 }
