@@ -36,32 +36,10 @@ namespace Insurance.Api.Controllers
             var salesPrice = await productApiClient.GetSalesPriceByProductId(productId).ConfigureAwait(false);
             toInsure.SalesPrice = salesPrice;
             
-            float insurance = CalculateInsuranceValue(toInsure);
+            float insurance = BusinessRules.CalculateInsuranceValue(toInsure);
             toInsure.InsuranceValue = insurance;
 
             return toInsure;
-        }
-
-        private static float CalculateInsuranceValue(InsuranceDto toInsure)
-        {
-            float insurance = 0f;
-
-            if (toInsure.SalesPrice < 500)
-                insurance = 0;
-            else
-            {
-                if (toInsure.SalesPrice > 500 && toInsure.SalesPrice < 2000)
-                    if (toInsure.ProductTypeHasInsurance)
-                        insurance += 1000;
-                if (toInsure.SalesPrice >= 2000)
-                    if (toInsure.ProductTypeHasInsurance)
-                        insurance += 2000;
-            }
-
-            if ((toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones") && toInsure.ProductTypeHasInsurance)
-                insurance += 500;
-
-            return insurance;
         }
 
         public class InsuranceDto
