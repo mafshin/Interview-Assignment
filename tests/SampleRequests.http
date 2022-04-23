@@ -1,0 +1,16 @@
+@api = "https://localhost:5001"
+@productApi = "http://localhost:5002";
+
+### Get list of product types
+GET http://localhost:5002/product_types
+
+### Get list of products
+GET http://localhost:5002/products
+
+### Calculate insurance for a product
+POST http://localhost:5000/api/insurance/product
+Content-Type: application/json
+
+{
+    "ProductId": 837856
+}

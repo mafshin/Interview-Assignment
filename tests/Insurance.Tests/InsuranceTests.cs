@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using Insurance.Api.Controllers;
+using Insurance.Api.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Insurance.Tests
@@ -14,10 +17,16 @@ namespace Insurance.Tests
     public class InsuranceTests : IClassFixture<ControllerTestFixture>
     {
         private readonly ControllerTestFixture _fixture;
+        private readonly IOptions<AppConfiguration> configs;
+        private readonly ILogger<HomeController> logger;
 
         public InsuranceTests(ControllerTestFixture fixture)
         {
             _fixture = fixture;
+
+            configs = GetConfiguration();
+            
+            logger = new TestLogger<HomeController>();
         }
 
         public static IEnumerable<object[]> GetTestData()
@@ -48,7 +57,8 @@ namespace Insurance.Tests
             {
                 ProductId = scenario.ProductId
             };
-            var sut = new HomeController();
+
+            var sut = new HomeController(configs, logger);
 
             var result = sut.CalculateInsurance(dto);
 
@@ -56,6 +66,32 @@ namespace Insurance.Tests
                 expected: expectedInsuranceValue,
                 actual: result.InsuranceValue
             );
+        }
+
+        public class TestLogger<T> : ILogger<T>
+        {
+            public IDisposable BeginScope<TState>(TState state)
+            {
+                return null;
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return false;
+            }
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+            {
+                Console.WriteLine($"Test Log Output: {formatter(state, exception)}");
+            }
+        }
+
+        public IOptions<AppConfiguration> GetConfiguration()
+        {
+            return Options.Create<AppConfiguration>(new AppConfiguration()
+            {
+                ProductApi = _fixture.ApiUrl
+            });
         }
 
         public class TestScenario
@@ -81,11 +117,13 @@ namespace Insurance.Tests
     {
         private readonly IHost _host;
 
+        public string ApiUrl {get;} = "http://localhost:5003";
+
         public ControllerTestFixture()
         {
             _host = new HostBuilder()
                    .ConfigureWebHostDefaults(
-                        b => b.UseUrls("http://localhost:5002")
+                        b => b.UseUrls(ApiUrl)
                               .UseStartup<ControllerTestStartup>()
                     )
                    .Build();
