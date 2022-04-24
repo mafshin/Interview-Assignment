@@ -61,6 +61,13 @@ namespace Insurance.Api.Controllers
             return response;
         }
 
+        [HttpPut]
+        [Route("api/insurance/surcharge")]
+        public async Task SetProductTypeSurcharges([FromBody] ProductTypeSurcharge[] surcharges)
+        {
+            throw new NotImplementedException();
+        }
+
         public class InsuranceDto
         {
             public int ProductId { get; set; }

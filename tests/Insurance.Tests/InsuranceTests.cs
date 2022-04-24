@@ -15,6 +15,7 @@ using Moq;
 using System.Threading.Tasks;
 using System.Linq;
 using Insurance.Api.Clients;
+using Insurance.Api.Models.Responses;
 
 namespace Insurance.Tests
 {
@@ -122,6 +123,50 @@ namespace Insurance.Tests
             };
         }
 
+         public static IEnumerable<object[]> GetOrderTestDataWithSurcharges()
+        {
+            return new List<object[]>
+            {
+                new OrderTestScenario(ExpectedInsurance: 3900, OrderItems: new (int ProductId, float Quantity)[]
+                    {
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2)
+                    }
+                    , "CalculateInsurance_GivenOrder1_ShouldInsuranceBe3000").ToObjectArray(),
+
+                new OrderTestScenario(ExpectedInsurance: 13900, OrderItems: new (int ProductId, float Quantity)[]
+                    {
+                        (ProductId: 2, Quantity: 10),
+                        (ProductId: 5, Quantity: 3)
+                    }
+                    , "CalculateInsurance_GivenOrder2_ShouldInsuranceBe11000").ToObjectArray(),
+                
+                new OrderTestScenario(ExpectedInsurance: 8400, OrderItems: new (int ProductId, float Quantity)[]
+                    {                      
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2),
+                        (ProductId: 7, Quantity: 2),
+                    }
+                    , "CalculateInsurance_GivenOrder3WithInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
+                
+                new OrderTestScenario(ExpectedInsurance: 3900, OrderItems: new (int ProductId, float Quantity)[]
+                    {                      
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2),
+                        (ProductId: 8, Quantity: 2),
+                    }
+                    , "CalculateInsurance_GivenOrder4WithNonInsurableDigitalCamera_ShouldInsuranceBe3000").ToObjectArray(),
+                
+                new OrderTestScenario(ExpectedInsurance: 8400, OrderItems: new (int ProductId, float Quantity)[]
+                    {                      
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2),
+                        (ProductId: 7, Quantity: 2),
+                        (ProductId: 8, Quantity: 2),
+                    }
+                    , "CalculateInsurance_GivenOrder5WithInsurableAndNonInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
+            };
+        }
         [Theory]
         [MemberData(nameof(GetProductTestData))]
         public async Task CalculateProductInsuranceTests(
@@ -159,6 +204,60 @@ namespace Insurance.Tests
         {
             float expectedInsuranceValue = testScenario.Model.ExpectedInsurance;
 
+            var response = await CalculateOrderInsuranceResponse(testScenario);
+
+            Assert.Equal(
+                expected: expectedInsuranceValue,
+                actual: response.InsuranceValue
+            );
+        }
+
+        [Theory]
+        [MemberData(nameof(GetOrderTestDataWithSurcharges))]
+        public async Task CalculateOrderInsuranceWithSurchargeTests(OrderTestScenario testScenario)
+        {
+            float expectedInsuranceValue = testScenario.Model.ExpectedInsurance;
+            
+            var surcharges = new ProductTypeSurcharge[]
+            {
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 1,
+                    Surcharge = 300
+                },
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 2,
+                    Surcharge = 200
+                },
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 3,
+                    Surcharge = 600
+                },
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 4,
+                    Surcharge = 1000
+                },
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 7,
+                    Surcharge = 2000
+                }
+            };
+
+            var response = await CalculateOrderInsuranceResponse(testScenario, surcharges);
+
+            Assert.Equal(
+                expected: expectedInsuranceValue,
+                actual: response.InsuranceValue
+            );
+        }
+
+        private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
+            OrderTestScenario testScenario, ProductTypeSurcharge[] productTypeSurcharges = null)
+        {
             var dto = new HomeController.OrderInsuranceDto
             {
                 OrderItems = testScenario.Model.OrderItems.Select(x => new HomeController.OrderItemDto
@@ -178,12 +277,13 @@ namespace Insurance.Tests
 
             var sut = new HomeController(configs, logger, productApiClient);
 
-            var response = await sut.CalculateOrderInsurance(dto);
+            if (productTypeSurcharges != null)
+            {
+                await sut.SetProductTypeSurcharges(productTypeSurcharges);
+            }
 
-            Assert.Equal(
-                expected: expectedInsuranceValue,
-                actual: response.InsuranceValue
-            );
+            var response = await sut.CalculateOrderInsurance(dto);
+            return response;
         }
 
         public IOptions<AppConfiguration> GetConfiguration()
