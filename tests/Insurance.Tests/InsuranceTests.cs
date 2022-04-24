@@ -14,20 +14,27 @@ using System.Net.Http;
 using Moq;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Threading;
+using Insurance.Api;
 using Insurance.Api.Clients;
+using Insurance.Api.Data;
 using Insurance.Api.Models.Responses;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Insurance.Tests
 {
     public class InsuranceTests : IClassFixture<ControllerTestFixture>
     {
         private readonly ControllerTestFixture _fixture;
+        private readonly ITestOutputHelper _testOutputHelper;
         private readonly IOptions<AppConfiguration> configs;
         private readonly ILogger<HomeController> logger;
 
-        public InsuranceTests(ControllerTestFixture fixture)
+        public InsuranceTests(ControllerTestFixture fixture, ITestOutputHelper testOutputHelper)
         {
             _fixture = fixture;
+            _testOutputHelper = testOutputHelper;
 
             configs = GetConfiguration();
 
@@ -95,35 +102,37 @@ namespace Insurance.Tests
                         (ProductId: 5, Quantity: 3)
                     }
                     , "CalculateInsurance_GivenOrder2_ShouldInsuranceBe11000").ToObjectArray(),
-                
+
                 new OrderTestScenario(ExpectedInsurance: 5500, OrderItems: new (int ProductId, float Quantity)[]
-                    {                      
+                    {
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2),
                         (ProductId: 7, Quantity: 2),
                     }
                     , "CalculateInsurance_GivenOrder3WithInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
-                
+
                 new OrderTestScenario(ExpectedInsurance: 3000, OrderItems: new (int ProductId, float Quantity)[]
-                    {                      
-                        (ProductId: 1, Quantity: 3),
-                        (ProductId: 3, Quantity: 2),
-                        (ProductId: 8, Quantity: 2),
-                    }
-                    , "CalculateInsurance_GivenOrder4WithNonInsurableDigitalCamera_ShouldInsuranceBe3000").ToObjectArray(),
-                
+                        {
+                            (ProductId: 1, Quantity: 3),
+                            (ProductId: 3, Quantity: 2),
+                            (ProductId: 8, Quantity: 2),
+                        }
+                        , "CalculateInsurance_GivenOrder4WithNonInsurableDigitalCamera_ShouldInsuranceBe3000")
+                    .ToObjectArray(),
+
                 new OrderTestScenario(ExpectedInsurance: 5500, OrderItems: new (int ProductId, float Quantity)[]
-                    {                      
-                        (ProductId: 1, Quantity: 3),
-                        (ProductId: 3, Quantity: 2),
-                        (ProductId: 7, Quantity: 2),
-                        (ProductId: 8, Quantity: 2),
-                    }
-                    , "CalculateInsurance_GivenOrder5WithInsurableAndNonInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
+                        {
+                            (ProductId: 1, Quantity: 3),
+                            (ProductId: 3, Quantity: 2),
+                            (ProductId: 7, Quantity: 2),
+                            (ProductId: 8, Quantity: 2),
+                        }
+                        , "CalculateInsurance_GivenOrder5WithInsurableAndNonInsurableDigitalCamera_ShouldInsuranceBe5500")
+                    .ToObjectArray(),
             };
         }
 
-         public static IEnumerable<object[]> GetOrderTestDataWithSurcharges()
+        public static IEnumerable<object[]> GetOrderTestDataWithSurcharges()
         {
             return new List<object[]>
             {
@@ -132,41 +141,42 @@ namespace Insurance.Tests
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2)
                     }
-                    , "CalculateInsurance_GivenOrder1_ShouldInsuranceBe3000").ToObjectArray(),
+                    , "CalculateInsurance_GivenOrder1WithSurcharge_ShouldInsuranceBe3900").ToObjectArray(),
 
                 new OrderTestScenario(ExpectedInsurance: 13900, OrderItems: new (int ProductId, float Quantity)[]
                     {
                         (ProductId: 2, Quantity: 10),
                         (ProductId: 5, Quantity: 3)
                     }
-                    , "CalculateInsurance_GivenOrder2_ShouldInsuranceBe11000").ToObjectArray(),
-                
+                    , "CalculateInsurance_GivenOrder2WithSurcharge_ShouldInsuranceBe13900").ToObjectArray(),
+
                 new OrderTestScenario(ExpectedInsurance: 8400, OrderItems: new (int ProductId, float Quantity)[]
-                    {                      
+                    {
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2),
                         (ProductId: 7, Quantity: 2),
                     }
-                    , "CalculateInsurance_GivenOrder3WithInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
-                
+                    , "CalculateInsurance_GivenOrder31WithSurcharge_ShouldInsuranceBe8400").ToObjectArray(),
+
                 new OrderTestScenario(ExpectedInsurance: 3900, OrderItems: new (int ProductId, float Quantity)[]
-                    {                      
+                    {
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2),
                         (ProductId: 8, Quantity: 2),
                     }
-                    , "CalculateInsurance_GivenOrder4WithNonInsurableDigitalCamera_ShouldInsuranceBe3000").ToObjectArray(),
-                
+                    , "CalculateInsurance_GivenOrder4WithSurcharge_ShouldInsuranceBe3900").ToObjectArray(),
+
                 new OrderTestScenario(ExpectedInsurance: 8400, OrderItems: new (int ProductId, float Quantity)[]
-                    {                      
+                    {
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2),
                         (ProductId: 7, Quantity: 2),
                         (ProductId: 8, Quantity: 2),
                     }
-                    , "CalculateInsurance_GivenOrder5WithInsurableAndNonInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
+                    , "CalculateInsurance_GivenOrder5WithSurcharge_ShouldInsuranceBe8400").ToObjectArray(),
             };
         }
+
         [Theory]
         [MemberData(nameof(GetProductTestData))]
         public async Task CalculateProductInsuranceTests(
@@ -187,8 +197,10 @@ namespace Insurance.Tests
                 .Returns(clinet);
 
             ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+            InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
+            BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
 
-            var sut = new HomeController(configs, logger, productApiClient);
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
 
             var result = await sut.CalculateProductInsurance(dto);
 
@@ -217,7 +229,7 @@ namespace Insurance.Tests
         public async Task CalculateOrderInsuranceWithSurchargeTests(OrderTestScenario testScenario)
         {
             float expectedInsuranceValue = testScenario.Model.ExpectedInsurance;
-            
+
             var surcharges = new ProductTypeSurcharge[]
             {
                 new ProductTypeSurcharge()
@@ -255,6 +267,52 @@ namespace Insurance.Tests
             );
         }
 
+        [Fact]
+        public async Task UpdateProductTypeSurcharge_ConcurrentUsers()
+        {
+            var surcharges = new ProductTypeSurcharge[]
+            {
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 1,
+                    Surcharge = 300
+                },
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 2,
+                    Surcharge = 200
+                },
+            };
+
+            InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
+            
+            // Simulate concurrent updates
+            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            {
+                await  Task.WhenAll(Enumerable.Range(0, 5)
+                    .Select(x => Task.Run(() => updateSurcharge(insuranceDataAccess))));
+            });
+
+            async Task updateSurcharge(IInsuranceDataAccess dataAccess)
+            {
+                var clinet = new HttpClient();
+                clinet.BaseAddress = new Uri(this._fixture.ApiUrl);
+
+                Mock<IHttpClientFactory> factory = new Mock<IHttpClientFactory>();
+                factory.Setup(x => x.CreateClient(It.IsAny<string>()))
+                    .Returns(clinet);
+
+                ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+                BusinessRules businessRules = new BusinessRules(productApiClient, dataAccess);
+
+                var sut = new HomeController(configs, logger, dataAccess, businessRules);
+
+                await sut.SetProductTypeSurcharges(surcharges);
+
+                var productType1Surcharge = await dataAccess.GetSurchargeByProductTypeId(1);
+            }
+        }
+
         private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
             OrderTestScenario testScenario, ProductTypeSurcharge[] productTypeSurcharges = null)
         {
@@ -274,8 +332,10 @@ namespace Insurance.Tests
                 .Returns(clinet);
 
             ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+            InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
+            BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
 
-            var sut = new HomeController(configs, logger, productApiClient);
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
 
             if (productTypeSurcharges != null)
             {

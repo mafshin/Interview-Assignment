@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Insurance.Api.Clients;
+using Insurance.Api.Data;
 using Insurance.Api.Models;
 using Insurance.Api.Models.Responses;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +14,15 @@ namespace Insurance.Api.Controllers
 {
     public class HomeController : BaseController<HomeController>
     {
-        private readonly IProductApiClient productApiClient;
+        private readonly IInsuranceDataAccess insuranceDataAccess;
+        private readonly IBusinessRules businessRules;
 
         public HomeController(IOptions<AppConfiguration> appConfiguration, ILogger<HomeController> logger,
-            IProductApiClient productApiClient)
+            IInsuranceDataAccess insuranceDataAccess, IBusinessRules businessRules)
             : base(appConfiguration, logger)
         {
-            this.productApiClient = productApiClient;
+            this.insuranceDataAccess = insuranceDataAccess;
+            this.businessRules = businessRules;
         }
 
         [HttpPost]
@@ -31,7 +34,7 @@ namespace Insurance.Api.Controllers
                 throw new ArgumentNullException(nameof(toInsure));
             }
 
-            toInsure = await BusinessRules.CalculateProductInsurance(productApiClient, toInsure);
+            toInsure = await businessRules.CalculateProductInsurance(toInsure);
 
             var response = new CalculateProductInsuranceResponse()
             {
@@ -51,7 +54,7 @@ namespace Insurance.Api.Controllers
                 throw new ArgumentException(nameof(orderInsuranceDto));
             }
             
-            var totalInsurance = await BusinessRules.CalculateOrderInsurance(productApiClient, orderInsuranceDto);
+            var totalInsurance = await businessRules.CalculateOrderInsurance(orderInsuranceDto);
 
             var response = new CalculateOrderInsuranceResponse()
             {
@@ -65,7 +68,7 @@ namespace Insurance.Api.Controllers
         [Route("api/insurance/surcharge")]
         public async Task SetProductTypeSurcharges([FromBody] ProductTypeSurcharge[] surcharges)
         {
-            throw new NotImplementedException();
+            await insuranceDataAccess.UpdateProductTypeSurcharges(surcharges).ConfigureAwait(false);
         }
 
         public class InsuranceDto
@@ -75,6 +78,7 @@ namespace Insurance.Api.Controllers
             [JsonIgnore] public string ProductTypeName { get; set; }
             [JsonIgnore] public bool ProductTypeHasInsurance { get; set; }
             [JsonIgnore] public float SalesPrice { get; set; }
+            public int ProductTypeId { get; set; }
         }
 
         public class OrderInsuranceDto

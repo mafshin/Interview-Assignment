@@ -1,13 +1,23 @@
 using System.Threading.Tasks;
 using Insurance.Api.Clients;
 using Insurance.Api.Controllers;
+using Insurance.Api.Data;
 using Insurance.Api.Models;
 
 namespace Insurance.Api
 {
-    public class BusinessRules 
+    public class BusinessRules : IBusinessRules
     {
-        public static async Task<HomeController.InsuranceDto> CalculateProductInsurance(IProductApiClient productApiClient, HomeController.InsuranceDto toInsure)
+        private readonly IProductApiClient productApiClient;
+        private readonly IInsuranceDataAccess insuranceDataAccess;
+
+        public BusinessRules(IProductApiClient productApiClient, IInsuranceDataAccess insuranceDataAccess)
+        {
+            this.productApiClient = productApiClient;
+            this.insuranceDataAccess = insuranceDataAccess;
+        }
+      
+        public async Task<HomeController.InsuranceDto> CalculateProductInsurance(HomeController.InsuranceDto toInsure)
         {
             var newInsurance = new HomeController.InsuranceDto
             {
@@ -21,14 +31,15 @@ namespace Insurance.Api
             newInsurance.ProductTypeName = productType.Name;
             newInsurance.ProductTypeHasInsurance = productType.CanBeInsured;
             newInsurance.SalesPrice = product.SalesPrice;
+            newInsurance.ProductTypeId = product.ProductTypeId;
 
-            float insurance = CalculateProductInsuranceValue(newInsurance);
+            float insurance = await CalculateProductInsuranceValue(newInsurance);
             newInsurance.InsuranceValue = insurance;
 
             return newInsurance;
         }
         
-        public static async Task<float> CalculateOrderInsurance(IProductApiClient productApiClient, HomeController.OrderInsuranceDto dto)
+        public async Task<float> CalculateOrderInsurance(HomeController.OrderInsuranceDto dto)
         {
             float totalInsurance = 0;
             bool isDigitalCameraCheckDone = false; 
@@ -40,7 +51,7 @@ namespace Insurance.Api
                     ProductId = item.ProductId
                 };
 
-                toInsure = await CalculateProductInsurance(productApiClient, toInsure).ConfigureAwait(false);
+                toInsure = await CalculateProductInsurance(toInsure).ConfigureAwait(false);
 
                 totalInsurance += toInsure.InsuranceValue * item.Quantity;
 
@@ -54,7 +65,7 @@ namespace Insurance.Api
             return totalInsurance;
         }
         
-        private static float CalculateProductInsuranceValue(HomeController.InsuranceDto toInsure)
+        private async Task<float> CalculateProductInsuranceValue(HomeController.InsuranceDto toInsure)
         {
             float insurance = 0f;
 
@@ -72,6 +83,10 @@ namespace Insurance.Api
 
                 if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones")
                     insurance += 500;
+
+                var productSurcharge = await insuranceDataAccess.GetSurchargeByProductTypeId(toInsure.ProductTypeId);
+
+                insurance += productSurcharge.GetValueOrDefault();
             }
 
             return insurance;

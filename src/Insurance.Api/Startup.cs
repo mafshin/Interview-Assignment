@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Insurance.Api.Clients;
+using Insurance.Api.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -39,6 +40,7 @@ namespace Insurance.Api
             });
 
             services.AddSingleton<IProductApiClient, ProductApiClient>();
+            services.AddSingleton<IInsuranceDataAccess, InsuranceDataAccess>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
