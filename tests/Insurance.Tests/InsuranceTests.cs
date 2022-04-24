@@ -94,6 +94,31 @@ namespace Insurance.Tests
                         (ProductId: 5, Quantity: 3)
                     }
                     , "CalculateInsurance_GivenOrder2_ShouldInsuranceBe11000").ToObjectArray(),
+                
+                new OrderTestScenario(ExpectedInsurance: 5500, OrderItems: new (int ProductId, float Quantity)[]
+                    {                      
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2),
+                        (ProductId: 7, Quantity: 2),
+                    }
+                    , "CalculateInsurance_GivenOrder3WithInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
+                
+                new OrderTestScenario(ExpectedInsurance: 3000, OrderItems: new (int ProductId, float Quantity)[]
+                    {                      
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2),
+                        (ProductId: 8, Quantity: 2),
+                    }
+                    , "CalculateInsurance_GivenOrder4WithNonInsurableDigitalCamera_ShouldInsuranceBe3000").ToObjectArray(),
+                
+                new OrderTestScenario(ExpectedInsurance: 5500, OrderItems: new (int ProductId, float Quantity)[]
+                    {                      
+                        (ProductId: 1, Quantity: 3),
+                        (ProductId: 3, Quantity: 2),
+                        (ProductId: 7, Quantity: 2),
+                        (ProductId: 8, Quantity: 2),
+                    }
+                    , "CalculateInsurance_GivenOrder5WithInsurableAndNonInsurableDigitalCamera_ShouldInsuranceBe5500").ToObjectArray(),
             };
         }
 
@@ -250,6 +275,24 @@ namespace Insurance.Tests
                         productTypeId = 2, // laptop
                         salesPrice = 4000
                     }
+                },
+                {
+                    7, new
+                    {
+                        id = 7,
+                        name = "Nikon Z6",
+                        productTypeId = 4, // digital camera
+                        salesPrice = 1700
+                    }
+                },
+                {
+                    8, new
+                    {
+                        id = 8,
+                        name = "Canon R7 (Upcoming !)",
+                        productTypeId = 5, // digital camera
+                        salesPrice = 2200
+                    }
                 }
             };
 
@@ -272,7 +315,19 @@ namespace Insurance.Tests
                     id = 3,
                     name = "Smartphones",
                     canBeInsured = false
-                }
+                },
+                new
+                {
+                    id = 4,
+                    name = "Digital cameras",
+                    canBeInsured = true
+                },
+                new
+                {
+                    id = 5,
+                    name = "Digital cameras",
+                    canBeInsured = false
+                },
             };
             app.UseRouting();
             app.UseEndpoints(
