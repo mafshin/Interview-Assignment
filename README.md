@@ -23,4 +23,8 @@ Async operations allows better usage of system resources while Api is waiting on
 introduced which simplifies access to Product Api actions.
 
 For the above refactoring, method extraction is used. For ProductApiClient a Pull Up approach is used
-to extract an interface to decouple HomeController from Product Api implementaiton. 
+to extract an interface to decouple HomeController from Product Api implementation.
+
+# Order (Shopping Cart) Insurance
+For calculating insurance of a shopping cart, we assumed that it can contain multiple products and
+each product may have been added multiple times.

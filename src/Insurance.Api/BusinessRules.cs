@@ -4,7 +4,7 @@ namespace Insurance.Api
 {
     public class BusinessRules 
     {
-        public static float CalculateInsuranceValue(HomeController.InsuranceDto toInsure)
+        public static float CalculateProductInsuranceValue(HomeController.InsuranceDto toInsure)
         {
             float insurance = 0f;
 
