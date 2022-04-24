@@ -29,3 +29,6 @@ to extract an interface to decouple HomeController from Product Api implementati
 # Order (Shopping Cart) Insurance
 For calculating insurance of a shopping cart, we assumed that it can contain multiple products and
 each product may have been added multiple times.
+
+# Feature 2
+For Task 4, we assume that new rule only applies to digital cameras which are insurable.

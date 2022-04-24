@@ -31,6 +31,7 @@ namespace Insurance.Api
         public static async Task<float> CalculateOrderInsurance(IProductApiClient productApiClient, HomeController.OrderInsuranceDto dto)
         {
             float totalInsurance = 0;
+            bool isDigitalCameraCheckDone = false; 
 
             foreach (var item in dto.OrderItems)
             {
@@ -42,6 +43,12 @@ namespace Insurance.Api
                 toInsure = await CalculateProductInsurance(productApiClient, toInsure).ConfigureAwait(false);
 
                 totalInsurance += toInsure.InsuranceValue * item.Quantity;
+
+                if (!isDigitalCameraCheckDone && toInsure.ProductTypeHasInsurance && toInsure.ProductTypeName == "Digital cameras")
+                {
+                    totalInsurance += 500;
+                    isDigitalCameraCheckDone = true;
+                }
             }
 
             return totalInsurance;
