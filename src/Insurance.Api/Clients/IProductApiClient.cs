@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Insurance.Api.Models;
 
-namespace Insurance.Api
+namespace Insurance.Api.Clients
 {
     public interface IProductApiClient
     {

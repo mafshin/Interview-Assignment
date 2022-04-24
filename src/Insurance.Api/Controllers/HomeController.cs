@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Insurance.Api.Clients;
 using Insurance.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -42,6 +44,11 @@ namespace Insurance.Api.Controllers
             return toInsure;
         }
 
+        public async Task<float> CalculateOrderInsurance(OrderInsuranceDto dto)
+        {
+            throw new NotImplementedException();
+        }
+
         public class InsuranceDto
         {
             public int ProductId { get; set; }
@@ -52,6 +59,17 @@ namespace Insurance.Api.Controllers
             public bool ProductTypeHasInsurance { get; set; }
             [JsonIgnore]
             public float SalesPrice { get; set; }
+        }
+
+        public class OrderInsuranceDto
+        {
+            public IEnumerable<OrderItemDto> OrderItems { get; set; }
+        }
+        
+        public class  OrderItemDto
+        {
+            public int ProductId { get; set; }
+            public float Quantity { get; set; }
         }
     }
 }

@@ -1,9 +1,9 @@
-using System.Threading.Tasks;
 using System.Net.Http;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
 using Insurance.Api.Models;
+using Newtonsoft.Json;
 
-namespace Insurance.Api
+namespace Insurance.Api.Clients
 {
     public class ProductApiClient : IProductApiClient
     {
