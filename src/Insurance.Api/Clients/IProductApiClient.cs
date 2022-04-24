@@ -5,13 +5,9 @@ namespace Insurance.Api.Clients
 {
     public interface IProductApiClient
     {
-        Task<ProductType> GetProductTypeByProductId(int productID);
-
-        Task<float> GetSalesPriceByProductId(int productID);
-
         Task<ProductType> GetProductTypeById(int productTypeId);
 
-        Task<dynamic> GetProductById(int productID);
+        Task<Product> GetProductById(int productID);
 
     }
 }

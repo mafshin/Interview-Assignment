@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Insurance.Api.Clients;
 using Insurance.Api.Models;
+using Insurance.Api.Models.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -23,59 +24,41 @@ namespace Insurance.Api.Controllers
 
         [HttpPost]
         [Route("api/insurance/product")]
-        public async Task<InsuranceDto> CalculateInsurance([FromBody] InsuranceDto toInsure)
+        public async Task<CalculateProductInsuranceResponse> CalculateProductInsurance([FromBody] InsuranceDto toInsure)
         {
             if (toInsure == null)
             {
                 throw new ArgumentNullException(nameof(toInsure));
             }
 
-            toInsure = await CalculateProductInsurance(toInsure);
+            toInsure = await BusinessRules.CalculateProductInsurance(productApiClient, toInsure);
 
-            return toInsure;
+            var response = new CalculateProductInsuranceResponse()
+            {
+                InsuranceValue = toInsure.InsuranceValue,
+                ProductId = toInsure.ProductId
+            };
+
+            return response;
         }
 
         [HttpPost]
-        [Route("api/insurnace/order")]
-        public async Task<float> CalculateOrderInsurance(OrderInsuranceDto dto)
+        [Route("api/insurance/order")]
+        public async Task<CalculateOrderInsuranceResponse> CalculateOrderInsurance([FromBody] OrderInsuranceDto orderInsuranceDto)
         {
-            float totalInsurance = 0;
-
-            foreach (var item in dto.OrderItems)
+            if (orderInsuranceDto == null)
             {
-                var toInsure = new InsuranceDto()
-                {
-                    ProductId = item.ProductId
-                };
-
-                toInsure = await CalculateProductInsurance(toInsure).ConfigureAwait(false);
-
-                totalInsurance += toInsure.InsuranceValue * item.Quantity;
+                throw new ArgumentException(nameof(orderInsuranceDto));
             }
-
-            return totalInsurance;
-        }
-
-        private async Task<InsuranceDto> CalculateProductInsurance(InsuranceDto toInsure)
-        {
-            var newInsurance = new InsuranceDto
-            {
-                ProductId = toInsure.ProductId,
-            };
             
-            int productId = newInsurance.ProductId;
+            var totalInsurance = await BusinessRules.CalculateOrderInsurance(productApiClient, orderInsuranceDto);
 
-            var productType = await productApiClient.GetProductTypeByProductId(productId).ConfigureAwait(false);
-            newInsurance.ProductTypeName = productType.Name;
-            newInsurance.ProductTypeHasInsurance = productType.CanBeInsured;
+            var response = new CalculateOrderInsuranceResponse()
+            {
+                InsuranceValue = totalInsurance
+            };
 
-            var salesPrice = await productApiClient.GetSalesPriceByProductId(productId).ConfigureAwait(false);
-            newInsurance.SalesPrice = salesPrice;
-
-            float insurance = BusinessRules.CalculateProductInsuranceValue(newInsurance);
-            newInsurance.InsuranceValue = insurance;
-
-            return newInsurance;
+            return response;
         }
 
         public class InsuranceDto

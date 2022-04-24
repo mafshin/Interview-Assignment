@@ -2,7 +2,7 @@
 @productApi = "http://localhost:5002";
 
 ### Get list of product types
-GET http://localhost:5002/product_types/841
+GET http://localhost:5002/product_types
 
 ### Get list of products
 GET http://localhost:5002/products
@@ -12,5 +12,26 @@ POST http://localhost:5000/api/insurance/product
 Content-Type: application/json
 
 {
-    "ProductId": 836676
+    "ProductId": 828519
+}
+
+### Calculate insurance for an order
+POST http://localhost:5000/api/insurance/order
+Content-Type: application/json
+
+{
+    "OrderItems": [
+        {
+            "ProductId": 858421,
+            "Quantity": 10
+        },
+        {
+            "ProductId": 836676,
+            "Quantity": 2
+        },
+        {
+            "ProductId": 828519,
+            "Quantity": 5
+        }
+    ]
 }

@@ -120,7 +120,7 @@ namespace Insurance.Tests
 
             var sut = new HomeController(configs, logger, productApiClient);
 
-            var result = await sut.CalculateInsurance(dto);
+            var result = await sut.CalculateProductInsurance(dto);
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
@@ -153,11 +153,11 @@ namespace Insurance.Tests
 
             var sut = new HomeController(configs, logger, productApiClient);
 
-            var insuranceValue = await sut.CalculateOrderInsurance(dto);
+            var response = await sut.CalculateOrderInsurance(dto);
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
-                actual: insuranceValue
+                actual: response.InsuranceValue
             );
         }
 
