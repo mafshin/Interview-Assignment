@@ -32,7 +32,9 @@ each product may have been added multiple times.
 
 # Feature 2
 For Task 4, we assume that new rule only applies to digital cameras which are insurable.
+Also this rule is only effective for an order (via /order endpoint).
 
 # Feature 3
 For this task, we assume that added surcharge per product type is kept in memory, so it
 will reset between Insurance Api restarts.
+Also the surcharge rate is applied to /product endpoint in addition to /order endpoint.

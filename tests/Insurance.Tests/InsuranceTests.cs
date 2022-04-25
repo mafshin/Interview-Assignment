@@ -143,14 +143,14 @@ namespace Insurance.Tests
                     }
                     , "CalculateInsurance_GivenOrder1WithSurcharge_ShouldInsuranceBe3900").ToObjectArray(),
 
-                new OrderTestScenario(ExpectedInsurance: 13900, OrderItems: new (int ProductId, float Quantity)[]
+                new OrderTestScenario(ExpectedInsurance: 13800, OrderItems: new (int ProductId, float Quantity)[]
                     {
                         (ProductId: 2, Quantity: 10),
                         (ProductId: 5, Quantity: 3)
                     }
                     , "CalculateInsurance_GivenOrder2WithSurcharge_ShouldInsuranceBe13900").ToObjectArray(),
 
-                new OrderTestScenario(ExpectedInsurance: 8400, OrderItems: new (int ProductId, float Quantity)[]
+                new OrderTestScenario(ExpectedInsurance: 7400, OrderItems: new (int ProductId, float Quantity)[]
                     {
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2),
@@ -166,7 +166,7 @@ namespace Insurance.Tests
                     }
                     , "CalculateInsurance_GivenOrder4WithSurcharge_ShouldInsuranceBe3900").ToObjectArray(),
 
-                new OrderTestScenario(ExpectedInsurance: 8400, OrderItems: new (int ProductId, float Quantity)[]
+                new OrderTestScenario(ExpectedInsurance: 7400, OrderItems: new (int ProductId, float Quantity)[]
                     {
                         (ProductId: 1, Quantity: 3),
                         (ProductId: 3, Quantity: 2),
@@ -235,27 +235,27 @@ namespace Insurance.Tests
                 new ProductTypeSurcharge()
                 {
                     ProductTypeId = 1,
-                    Surcharge = 300
+                    Surcharge = 0.3f,
                 },
                 new ProductTypeSurcharge()
                 {
                     ProductTypeId = 2,
-                    Surcharge = 200
+                    Surcharge = 0.2f,
                 },
                 new ProductTypeSurcharge()
                 {
                     ProductTypeId = 3,
-                    Surcharge = 600
+                    Surcharge = 0.6f,
                 },
                 new ProductTypeSurcharge()
                 {
                     ProductTypeId = 4,
-                    Surcharge = 1000
+                    Surcharge = 0.4f,
                 },
                 new ProductTypeSurcharge()
                 {
                     ProductTypeId = 7,
-                    Surcharge = 2000
+                    Surcharge = 0.25f,
                 }
             };
 
@@ -311,6 +311,48 @@ namespace Insurance.Tests
 
                 var productType1Surcharge = await dataAccess.GetSurchargeByProductTypeId(1);
             }
+        }
+        
+        [Fact]
+        public async Task CalculateInsurance_GivenSalesPriceOver1700With40PercentSurcharge_ShouldInsuranceBe1400()
+        {
+            float expectedInsuranceValue = 1400;
+            
+            var dto = new HomeController.InsuranceDto
+            {
+                ProductId = 7
+            };
+
+            var clinet = new HttpClient();
+            clinet.BaseAddress = new Uri(this._fixture.ApiUrl);
+
+            Mock<IHttpClientFactory> factory = new Mock<IHttpClientFactory>();
+            factory.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(clinet);
+
+            ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+            InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
+            BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
+
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
+
+            var surcharge = new[]
+            {
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 4,
+                    Surcharge = 0.4f
+                }
+            };
+            
+            await sut.SetProductTypeSurcharges(surcharge);
+
+            var result = await sut.CalculateProductInsurance(dto);
+
+            Assert.Equal(
+                expected: expectedInsuranceValue,
+                actual: result.InsuranceValue
+            );
         }
 
         private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
