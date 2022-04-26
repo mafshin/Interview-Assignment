@@ -78,7 +78,8 @@ namespace Insurance.Api
         {
             if (insurance > 0)
             {
-                var productSurcharge = await insuranceDataAccess.GetSurchargeByProductTypeId(productTypeId);
+                var productSurcharge = await insuranceDataAccess.GetSurchargeByProductTypeId(productTypeId)
+                    .ConfigureAwait(false);
 
                 float surchargeRate = productSurcharge.GetValueOrDefault();
 
