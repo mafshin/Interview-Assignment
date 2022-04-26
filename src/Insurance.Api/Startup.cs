@@ -1,19 +1,19 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Net.Http;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Insurance.Api.Models;
 using Microsoft.Extensions.Options;
+using Polly;
+using Polly.CircuitBreaker;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Extensions.Http;
+using Polly.Retry;
 
 namespace Insurance.Api
 {
@@ -33,14 +33,56 @@ namespace Insurance.Api
 
             services.Configure<AppConfiguration>(Configuration);
 
-            services.AddHttpClient("ProductApiClient", (isp, client) => {
-               var appConfiguration =  isp.GetService<IOptions<AppConfiguration>>();
+            var appConfiguration =  services.BuildServiceProvider().GetService<IOptions<AppConfiguration>>();
 
-               client.BaseAddress = new Uri(appConfiguration.Value.ProductApi);
+            var httpClientBuilder = services.AddHttpClient("ProductApiClient", (isp, client) =>
+            {
+                appConfiguration = isp.GetService<IOptions<AppConfiguration>>();
+
+                client.BaseAddress = new Uri(appConfiguration.Value.ProductApi);
             });
+            
+            AddFaultTolerancePolicy(httpClientBuilder, appConfiguration);
 
+            services.AddSingleton<IBusinessRules, BusinessRules>();
             services.AddSingleton<IProductApiClient, ProductApiClient>();
             services.AddSingleton<IInsuranceDataAccess, InsuranceDataAccess>();
+        }
+
+        private static void AddFaultTolerancePolicy(IHttpClientBuilder httpClientBuilder, IOptions<AppConfiguration>? appConfiguration)
+        {
+            if (appConfiguration.Value.FaultTolerance.RetryPolicyEnabled)
+            {
+                var retryPolicy = GetRetryPolicy(appConfiguration);
+                httpClientBuilder.AddPolicyHandler(retryPolicy);
+            }
+
+            if (appConfiguration.Value.FaultTolerance.CircuitBreakerEnabled)
+            {
+                var circuitBreaker = GetCircuitBreakerPolicy(appConfiguration);
+                httpClientBuilder.AddPolicyHandler(circuitBreaker);
+            }
+        }
+
+        private static AsyncCircuitBreakerPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(
+            IOptions<AppConfiguration>? appConfiguration)
+        {
+            return HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .CircuitBreakerAsync(appConfiguration.Value.FaultTolerance.HandledEventsAllowedBeforeBreaking, 
+                    TimeSpan.FromSeconds(appConfiguration.Value.FaultTolerance.DurationOfBreakInSeconds));
+        }
+
+        private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(
+            IOptions<AppConfiguration>? appConfiguration)
+        {
+            var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1),
+                retryCount: appConfiguration.Value.FaultTolerance.RetryCount);
+
+            var retryPolicy = HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .WaitAndRetryAsync(delay);
+            return retryPolicy;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -57,10 +99,7 @@ namespace Insurance.Api
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

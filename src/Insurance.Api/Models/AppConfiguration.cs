@@ -9,5 +9,10 @@ namespace Insurance.Api.Models
         /// Url of Product Api.
         /// </summary>
         public string ProductApi {get;set;}
+        
+        /// <summary>
+        /// Determines how http client should behave in case of failures.
+        /// </summary>
+        public FaultToleranceConfiguration FaultTolerance { get; set; }
     }
 }
