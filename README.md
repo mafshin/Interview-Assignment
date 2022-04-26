@@ -38,3 +38,9 @@ Also this rule is only effective for an order (via /order endpoint).
 For this task, we assume that added surcharge per product type is kept in memory, so it
 will reset between Insurance Api restarts.
 Also the surcharge rate is applied to /product endpoint in addition to /order endpoint.
+
+# Fault Tolerance
+Access to ProductApi resources is configured by two retry and circuit breaker policies.
+In case of ProductApi getting down or slowness the policies can be configured to retry
+requests or break the circuit to prevent cascade effect of retrying failed requests. 
+These policies can be configured via `FaultTolerance` section in [appsettings.json](/src/Insurance.Api/appsettings.json)
