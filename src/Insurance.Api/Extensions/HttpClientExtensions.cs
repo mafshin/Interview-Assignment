@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -19,9 +20,16 @@ namespace Insurance.Api.Extensions
         /// json into.</typeparam>
         /// <returns>A <see cref="Task{T}"/> containing the deserialized
         /// object from response.</returns>
-        public static async Task<T> GetAsync<T>(this HttpClient httpClient, string requestUri)
+        public static async Task<T> GetAsync<T>(this HttpClient httpClient, string requestUri) where T : class
         {
-            string json = await httpClient.GetStringAsync(requestUri).ConfigureAwait(false);
+            var response = await httpClient.GetAsync(requestUri).ConfigureAwait(false);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
             var model = JsonConvert.DeserializeObject<T>(json);
             return model;
         }

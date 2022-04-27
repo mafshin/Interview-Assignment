@@ -52,12 +52,19 @@ namespace Insurance.Api.Controllers
         /// <exception cref="ArgumentNullException"></exception>
         [HttpPost]
         [Route("product")]
-        public async Task<CalculateProductInsuranceResponse> CalculateProductInsurance(
+        public async Task<IActionResult> CalculateProductInsurance(
             [FromBody] CalculateProductInsuranceRequest toInsure)
         {
             if (toInsure == null)
             {
-                throw new ArgumentNullException(nameof(toInsure));
+                return BadRequest();
+            }
+
+            var product = await productApiClient.GetProductById(toInsure.ProductId).ConfigureAwait(false);
+
+            if (product is null)
+            {
+                return  StatusCode(StatusCodes.Status422UnprocessableEntity, $"Product with id '{toInsure.ProductId}' does not exist");
             }
 
             ProductInfoDto productInfoDto = new ProductInfoDto()
@@ -65,7 +72,7 @@ namespace Insurance.Api.Controllers
                 ProductId = toInsure.ProductId
             };
 
-            float insurance = await businessRules.CalculateProductInsurance(productInfoDto);
+            float insurance = await businessRules.CalculateProductInsurance(productInfoDto).ConfigureAwait(false);
 
             var response = new CalculateProductInsuranceResponse()
             {
@@ -73,7 +80,7 @@ namespace Insurance.Api.Controllers
                 ProductId = toInsure.ProductId
             };
 
-            return response;
+            return Ok(response);
         }
 
         /// <summary>
@@ -85,12 +92,25 @@ namespace Insurance.Api.Controllers
         /// <exception cref="ArgumentException"></exception>
         [HttpPost]
         [Route("order")]
-        public async Task<CalculateOrderInsuranceResponse> CalculateOrderInsurance(
+        public async Task<IActionResult> CalculateOrderInsurance(
             [FromBody] CalculateOrderInsuranceRequest orderInsuranceDto)
         {
-            if (orderInsuranceDto == null)
+            if (orderInsuranceDto == null || orderInsuranceDto.OrderItems == null)
             {
-                throw new ArgumentException(nameof(orderInsuranceDto));
+                return BadRequest();
+            }
+
+            var products =
+                await Task.WhenAll(
+                    orderInsuranceDto.OrderItems.Select(async (x) =>
+                        new {x.ProductId, Product = await productApiClient.GetProductById(x.ProductId)}));
+
+            var invalidProducts = products.Where(x => x.Product == null).Select(x => x.ProductId).ToArray();
+
+            if (invalidProducts.Any())
+            {
+                return StatusCode(StatusCodes.Status422UnprocessableEntity,
+                    $"Some product ids are invalid: {(string.Join(", ", invalidProducts))}");
             }
 
             OrderInsuranceDto dto = new OrderInsuranceDto()
@@ -109,7 +129,7 @@ namespace Insurance.Api.Controllers
                 InsuranceValue = totalInsurance
             };
 
-            return response;
+            return Ok(response);
         }
 
         /// <summary>
@@ -122,6 +142,11 @@ namespace Insurance.Api.Controllers
         [Route("surcharge")]
         public async Task<IActionResult> SetProductTypeSurcharges([FromBody] ProductTypeSurcharge[] surcharges)
         {
+            if (surcharges == null)
+            {
+                return BadRequest();
+            }
+            
             IEnumerable<ProductType> productTypes = await productApiClient.GetProductTypes().ConfigureAwait(false);
 
             var invalidItems = surcharges.Where(x => productTypes.All(p => p.Id != x.ProductTypeId)).ToArray();

@@ -22,6 +22,7 @@ using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Insurance.Api.Models.Requests;
 using Insurance.Api.Models.Responses;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Xunit.Abstractions;
@@ -206,7 +207,9 @@ namespace Insurance.Tests
 
             var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules, productApiClient);
 
-            var result = await sut.CalculateProductInsurance(dto);
+            var response = await sut.CalculateProductInsurance(dto);
+
+            var result = (response as OkObjectResult).Value as CalculateProductInsuranceResponse;
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
@@ -220,7 +223,7 @@ namespace Insurance.Tests
         {
             float expectedInsuranceValue = testScenario.Model.ExpectedInsurance;
 
-            var response = await CalculateOrderInsuranceResponse(testScenario);
+            var response = await CalculateOrderInsurance(testScenario);
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
@@ -258,7 +261,7 @@ namespace Insurance.Tests
                 }
             };
 
-            var response = await CalculateOrderInsuranceResponse(testScenario, surcharges);
+            var response = await CalculateOrderInsurance(testScenario, surcharges);
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
@@ -367,7 +370,9 @@ namespace Insurance.Tests
 
             await sut.SetProductTypeSurcharges(surcharge);
 
-            var result = await sut.CalculateProductInsurance(dto);
+            var response = await sut.CalculateProductInsurance(dto);
+
+            var result = (response as OkObjectResult).Value as CalculateProductInsuranceResponse;
 
             Assert.Equal(
                 expected: expectedInsuranceValue,
@@ -439,10 +444,7 @@ namespace Insurance.Tests
             try
             {
                 host = new HostBuilder()
-                    .ConfigureAppConfiguration(config =>
-                    {
-                        config.AddJsonStream(memoryStream);
-                    })
+                    .ConfigureAppConfiguration(config => { config.AddJsonStream(memoryStream); })
                     .ConfigureWebHostDefaults(
                         b => b.UseUrls("http://localhost:5010")
                             .UseStartup<Startup>()
@@ -457,8 +459,65 @@ namespace Insurance.Tests
             }
         }
 
-        private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
+        [Fact]
+        public async Task CalculateProductInsurance_GivenProductIdDoesntExist_ShouldReturn422()
+        {
+            var dto = new CalculateProductInsuranceRequest()
+            {
+                ProductId = 10000
+            };
+
+            var clinet = new HttpClient();
+            clinet.BaseAddress = new Uri(this._fixture.ApiUrl);
+
+            Mock<IHttpClientFactory> factory = new Mock<IHttpClientFactory>();
+            factory.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(clinet);
+
+            ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+            InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
+            BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
+
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules, productApiClient);
+
+            var response = await sut.CalculateProductInsurance(dto);
+
+            var actual = (response as IStatusCodeActionResult).StatusCode;
+
+            var expected = StatusCodes.Status422UnprocessableEntity;
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public async Task CalculateOrderInsurance_GivenProductIdDoesntExist_ShouldReturn422()
+        {
+            OrderTestScenario testScenario = new OrderTestScenario(0, new (int, float)[]
+            {
+                (10000, 1)
+            }, "OrderInsuranceWithInvalidProductId");
+            
+            var response = await CalculateOrderInsuranceResponse(testScenario, null);
+
+            var actual = (response as IStatusCodeActionResult).StatusCode;
+
+            var expected = StatusCodes.Status422UnprocessableEntity;
+
+            Assert.Equal(expected, actual);
+        }
+
+        private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsurance(
             OrderTestScenario testScenario, ProductTypeSurcharge[] productTypeSurcharges = null)
+        {
+            var response = await CalculateOrderInsuranceResponse(testScenario, productTypeSurcharges);
+
+            var result = (response as OkObjectResult).Value as CalculateOrderInsuranceResponse;
+
+            return result;
+        }
+
+        private async Task<IActionResult> CalculateOrderInsuranceResponse(OrderTestScenario testScenario,
+            ProductTypeSurcharge[] productTypeSurcharges)
         {
             var dto = new CalculateOrderInsuranceRequest()
             {
