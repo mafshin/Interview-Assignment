@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
-using Insurance.Api.Controllers;
+using Insurance.Api.Models;
+using Insurance.Api.Models.Dto;
 
 namespace Insurance.Api.Business
 {
@@ -11,9 +12,10 @@ namespace Insurance.Api.Business
         /// <summary>
         /// Calculates the insurance value for the given product request.
         /// </summary>
-        /// <param name="toInsure"></param>
-        /// <returns></returns>
-        Task<HomeController.InsuranceDto> CalculateProductInsurance(HomeController.InsuranceDto toInsure);
+        /// <param name="toInsure">Product info</param>
+        /// <returns>A <see cref="Task{float}"/> containing the insurance value
+        /// for the given product.</returns>
+        Task<float> CalculateProductInsurance(ProductInfoDto toInsure);
         
         /// <summary>
         /// Calculates the insurance for the given order request.
@@ -21,6 +23,6 @@ namespace Insurance.Api.Business
         /// <param name="order">Order request to calculate its insurance.</param>
         /// <returns>A <see cref="Task{float}"/> including the insurance value
         /// for the given order request.</returns>
-        Task<float> CalculateOrderInsurance(HomeController.OrderInsuranceDto order);
+        Task<float> CalculateOrderInsurance(OrderInsuranceDto order);
     }
 }

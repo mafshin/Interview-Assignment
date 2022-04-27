@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
 using Insurance.Api.Clients;
-using Insurance.Api.Controllers;
 using Insurance.Api.Data;
 using Insurance.Api.Models;
+using Insurance.Api.Models.Dto;
 
 namespace Insurance.Api.Business
 {
@@ -27,19 +27,19 @@ namespace Insurance.Api.Business
         }
       
         /// <inheritdoc/>
-        public async Task<HomeController.InsuranceDto> CalculateProductInsurance(HomeController.InsuranceDto toInsure)
+        public async Task<float> CalculateProductInsurance(ProductInfoDto toInsure)
         {
             var newInsurance = await GetProductInfo(toInsure.ProductId);
 
             float insurance =  CalculateProductInsuranceValue(newInsurance);
             
-            newInsurance.InsuranceValue = await ApplySurcharge(newInsurance.ProductTypeId, insurance).ConfigureAwait(false);
+            insurance = await ApplySurcharge(newInsurance.ProductTypeId, insurance).ConfigureAwait(false);
 
-            return newInsurance;
+            return insurance;
         }
 
         /// <inheritdoc/>
-        public async Task<float> CalculateOrderInsurance(HomeController.OrderInsuranceDto order)
+        public async Task<float> CalculateOrderInsurance(OrderInsuranceDto order)
         {
             float totalInsurance = 0;
             bool isDigitalCameraCheckDone = false; 
@@ -66,9 +66,9 @@ namespace Insurance.Api.Business
             return totalInsurance;
         }
 
-        private async Task<HomeController.InsuranceDto> GetProductInfo(int productId)
+        private async Task<ProductInfoDto> GetProductInfo(int productId)
         {
-            var newInsurance = new HomeController.InsuranceDto
+            var newInsurance = new ProductInfoDto
             {
                 ProductId = productId
             };
@@ -102,7 +102,7 @@ namespace Insurance.Api.Business
             return insurance;
         }
         
-        private float CalculateProductInsuranceValue(HomeController.InsuranceDto toInsure)
+        private float CalculateProductInsuranceValue(ProductInfoDto toInsure)
         {
             float insurance = 0f;
 

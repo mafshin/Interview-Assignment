@@ -16,13 +16,12 @@ using Moq;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Text;
-using System.Text.Unicode;
 using Insurance.Api;
 using Insurance.Api.Business;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
+using Insurance.Api.Models.Requests;
 using Insurance.Api.Models.Responses;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Xunit.Abstractions;
@@ -189,7 +188,7 @@ namespace Insurance.Tests
         {
             float expectedInsuranceValue = scenario.Model.ExpectedInsurance;
 
-            var dto = new HomeController.InsuranceDto
+            var dto = new CalculateProductInsuranceRequest()
             {
                 ProductId = scenario.Model.ProductId
             };
@@ -339,7 +338,7 @@ namespace Insurance.Tests
         {
             float expectedInsuranceValue = 1400;
 
-            var dto = new HomeController.InsuranceDto
+            var dto = new CalculateProductInsuranceRequest()
             {
                 ProductId = 7
             };
@@ -461,9 +460,9 @@ namespace Insurance.Tests
         private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
             OrderTestScenario testScenario, ProductTypeSurcharge[] productTypeSurcharges = null)
         {
-            var dto = new HomeController.OrderInsuranceDto
+            var dto = new CalculateOrderInsuranceRequest()
             {
-                OrderItems = testScenario.Model.OrderItems.Select(x => new HomeController.OrderItemDto
+                OrderItems = testScenario.Model.OrderItems.Select(x => new CalculateOrderInsuranceRequest.OrderItem()
                 {
                     ProductId = x.ProductId, Quantity = x.Quantity
                 })

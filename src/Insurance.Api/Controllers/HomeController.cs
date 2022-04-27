@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Insurance.Api.Business;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Insurance.Api.Models;
+using Insurance.Api.Models.Dto;
+using Insurance.Api.Models.Requests;
 using Insurance.Api.Models.Responses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -51,18 +52,24 @@ namespace Insurance.Api.Controllers
         /// <exception cref="ArgumentNullException"></exception>
         [HttpPost]
         [Route("product")]
-        public async Task<CalculateProductInsuranceResponse> CalculateProductInsurance([FromBody] InsuranceDto toInsure)
+        public async Task<CalculateProductInsuranceResponse> CalculateProductInsurance(
+            [FromBody] CalculateProductInsuranceRequest toInsure)
         {
             if (toInsure == null)
             {
                 throw new ArgumentNullException(nameof(toInsure));
             }
 
-            toInsure = await businessRules.CalculateProductInsurance(toInsure);
+            ProductInfoDto productInfoDto = new ProductInfoDto()
+            {
+                ProductId = toInsure.ProductId
+            };
+
+            float insurance = await businessRules.CalculateProductInsurance(productInfoDto);
 
             var response = new CalculateProductInsuranceResponse()
             {
-                InsuranceValue = toInsure.InsuranceValue,
+                InsuranceValue = insurance,
                 ProductId = toInsure.ProductId
             };
 
@@ -78,14 +85,24 @@ namespace Insurance.Api.Controllers
         /// <exception cref="ArgumentException"></exception>
         [HttpPost]
         [Route("order")]
-        public async Task<CalculateOrderInsuranceResponse> CalculateOrderInsurance([FromBody] OrderInsuranceDto orderInsuranceDto)
+        public async Task<CalculateOrderInsuranceResponse> CalculateOrderInsurance(
+            [FromBody] CalculateOrderInsuranceRequest orderInsuranceDto)
         {
             if (orderInsuranceDto == null)
             {
                 throw new ArgumentException(nameof(orderInsuranceDto));
             }
-            
-            var totalInsurance = await businessRules.CalculateOrderInsurance(orderInsuranceDto);
+
+            OrderInsuranceDto dto = new OrderInsuranceDto()
+            {
+                OrderItems = orderInsuranceDto.OrderItems.Select(x => new OrderItemDto()
+                {
+                    ProductId = x.ProductId,
+                    Quantity = x.Quantity
+                })
+            };
+
+            var totalInsurance = await businessRules.CalculateOrderInsurance(dto);
 
             var response = new CalculateOrderInsuranceResponse()
             {
@@ -115,31 +132,10 @@ namespace Insurance.Api.Controllers
                     $"Some ProductTypeIds are invalid: {String.Join(", ", invalidItems.Select(x => x.ProductTypeId))}";
                 return this.StatusCode(StatusCodes.Status422UnprocessableEntity, message);
             }
-            
+
             await insuranceDataAccess.UpdateProductTypeSurcharges(surcharges).ConfigureAwait(false);
 
             return Ok();
-        }
-
-        public class InsuranceDto
-        {
-            public int ProductId { get; set; }
-            [JsonIgnore] public float InsuranceValue { get; set; }
-            [JsonIgnore] public string ProductTypeName { get; set; }
-            [JsonIgnore] public bool ProductTypeHasInsurance { get; set; }
-            [JsonIgnore] public float SalesPrice { get; set; }
-            [JsonIgnore] public int ProductTypeId { get; set; }
-        }
-
-        public class OrderInsuranceDto
-        {
-            public IEnumerable<OrderItemDto> OrderItems { get; set; }
-        }
-
-        public class OrderItemDto
-        {
-            public int ProductId { get; set; }
-            public float Quantity { get; set; }
         }
     }
 }
