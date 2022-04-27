@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Net.Mime;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Insurance.Api.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.CircuitBreaker;
@@ -91,6 +93,20 @@ namespace Insurance.Api
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler(exceptionHandlerApp =>
+                {
+                    exceptionHandlerApp.Run(async context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+                        context.Response.ContentType = MediaTypeNames.Text.Plain;
+
+                        await context.Response.WriteAsync("An error has occured");
+                    });
+                });
             }
 
             app.UseHttpsRedirection();
