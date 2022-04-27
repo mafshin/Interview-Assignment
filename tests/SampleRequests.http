@@ -1,11 +1,11 @@
 @api = "https://localhost:5001"
-@productApi = "http://localhost:5002";
-
+@productApi = "http://localhost:5002"
+;
 ### Get list of product types
 GET http://localhost:5002/product_types
 
 ### Get list of products
-GET http://localhost:5002/products
+GET http://localhost:5002/products/828519
 
 ### Calculate insurance for a product
 POST http://localhost:5000/api/insurance/product
@@ -35,3 +35,19 @@ Content-Type: application/json
         }
     ]
 }
+
+
+### Calculate insurance for an order
+PUT http://localhost:5000/api/insurance/surcharge
+Content-Type: application/json
+
+[
+    {
+        "ProductTypeId": 32,
+        "Surcharge": 0.8
+    },
+    {
+        "ProductTypeId": 3,
+        "Surcharge": 0.2
+    }
+]

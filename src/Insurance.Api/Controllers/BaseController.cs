@@ -9,10 +9,11 @@ namespace Insurance.Api.Controllers
     public abstract class BaseController<T> : Controller 
     {
         /// <summary>
-        /// Initializes a new instance of <see ref="BaseController">.
+        /// Initializes a new instance of <see cref="BaseController{T}"/>.
         /// </summary>
         /// <param name="appConfiguration">The application configuration.</param>
-        public  BaseController(IOptions<AppConfiguration> appConfiguration, ILogger<T> logger)
+        /// <param name="logger">Logger instance.</param>
+        protected BaseController(IOptions<AppConfiguration> appConfiguration, ILogger<T> logger)
         {
             AppConfiguration = appConfiguration;
             Logger = logger;
@@ -22,7 +23,11 @@ namespace Insurance.Api.Controllers
         /// Application Configuration.
         /// </summary>
         /// <value></value>
-        public IOptions<AppConfiguration> AppConfiguration { get; }
-        public ILogger<T> Logger { get; }
+        protected IOptions<AppConfiguration> AppConfiguration { get; }
+
+        /// <summary>
+        /// Logger instance.
+        /// </summary>
+        protected ILogger<T> Logger { get; }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Net.Mime;
+using Insurance.Api.Business;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Microsoft.AspNetCore.Builder;

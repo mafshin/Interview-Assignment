@@ -14,13 +14,11 @@ using System.Net.Http;
 using Moq;
 using System.Threading.Tasks;
 using System.Linq;
-using System.Threading;
-using Insurance.Api;
+using Insurance.Api.Business;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Insurance.Api.Models.Responses;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace Insurance.Tests
 {

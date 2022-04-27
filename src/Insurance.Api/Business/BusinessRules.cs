@@ -5,19 +5,28 @@ using Insurance.Api.Controllers;
 using Insurance.Api.Data;
 using Insurance.Api.Models;
 
-namespace Insurance.Api
+namespace Insurance.Api.Business
 {
+    /// <summary>
+    /// Business rules for calculating insurance.
+    /// </summary>
     public class BusinessRules : IBusinessRules
     {
         private readonly IProductApiClient productApiClient;
         private readonly IInsuranceDataAccess insuranceDataAccess;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BusinessRules"/>.
+        /// </summary>
+        /// <param name="productApiClient">The client to access Product Api.</param>
+        /// <param name="insuranceDataAccess">The data access instance for insurance.</param>
         public BusinessRules(IProductApiClient productApiClient, IInsuranceDataAccess insuranceDataAccess)
         {
             this.productApiClient = productApiClient;
             this.insuranceDataAccess = insuranceDataAccess;
         }
       
+        /// <inheritdoc/>
         public async Task<HomeController.InsuranceDto> CalculateProductInsurance(HomeController.InsuranceDto toInsure)
         {
             var newInsurance = await GetProductInfo(toInsure.ProductId);
@@ -29,12 +38,13 @@ namespace Insurance.Api
             return newInsurance;
         }
 
-        public async Task<float> CalculateOrderInsurance(HomeController.OrderInsuranceDto dto)
+        /// <inheritdoc/>
+        public async Task<float> CalculateOrderInsurance(HomeController.OrderInsuranceDto order)
         {
             float totalInsurance = 0;
             bool isDigitalCameraCheckDone = false; 
             
-            foreach (var item in dto.OrderItems)
+            foreach (var item in order.OrderItems)
             {
                 var newInsurance = await GetProductInfo(item.ProductId);
                 
@@ -96,21 +106,21 @@ namespace Insurance.Api
         {
             float insurance = 0f;
 
-            if (toInsure.ProductTypeHasInsurance)
+            if (!toInsure.ProductTypeHasInsurance) 
+                return insurance;
+            
+            if (toInsure.SalesPrice < 500)
+                insurance = 0;
+            else
             {
-                if (toInsure.SalesPrice < 500)
-                    insurance = 0;
-                else
-                {
-                    if (toInsure.SalesPrice > 500 && toInsure.SalesPrice < 2000)
-                        insurance += 1000;
-                    if (toInsure.SalesPrice >= 2000)
-                        insurance += 2000;
-                }
-
-                if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones")
-                    insurance += 500;
+                if (toInsure.SalesPrice > 500 && toInsure.SalesPrice < 2000)
+                    insurance += 1000;
+                if (toInsure.SalesPrice >= 2000)
+                    insurance += 2000;
             }
+
+            if (toInsure.ProductTypeName == "Laptops" || toInsure.ProductTypeName == "Smartphones")
+                insurance += 500;
 
             return insurance;
         }

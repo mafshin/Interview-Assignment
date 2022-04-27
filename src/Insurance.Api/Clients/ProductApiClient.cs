@@ -9,11 +9,17 @@ namespace Insurance.Api.Clients
     {
         private readonly IHttpClientFactory httpClientFactory;
 
-        public ProductApiClient(IHttpClientFactory clientFactory)
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProductApiClient"/>.
+        /// </summary>
+        /// <param name="httpClientFactory">Http Client Factory for creating <see cref="HttpClient"/>
+        /// instances.</param>
+        public ProductApiClient(IHttpClientFactory httpClientFactory)
         {
-            this.httpClientFactory = clientFactory;
+            this.httpClientFactory = httpClientFactory;
         }
 
+        /// <inheritdoc />
         public async Task<ProductType> GetProductTypeById(int productTypeId)
         {
             HttpClient client = CreateClient();
@@ -22,14 +28,19 @@ namespace Insurance.Api.Clients
             return productType;
         }
 
-        public async Task<Product> GetProductById(int productID)
+        /// <inheritdoc />
+        public async Task<Product> GetProductById(int productId)
         {
             HttpClient client = CreateClient();
-            string json = await client.GetStringAsync(string.Format("/products/{0:G}", productID)).ConfigureAwait(false);
+            string json = await client.GetStringAsync($"/products/{productId}").ConfigureAwait(false);
             var product = JsonConvert.DeserializeObject<Product>(json);
             return product;
         }
 
+        /// <summary>
+        /// Creates the product api client.
+        /// </summary>
+        /// <returns>A <see cref="HttpClient"/> for accessing product api.</returns>
         private HttpClient CreateClient()
         {
             return httpClientFactory.CreateClient("ProductApiClient");

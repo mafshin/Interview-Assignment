@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Insurance.Api.Clients;
+using Insurance.Api.Business;
 using Insurance.Api.Data;
 using Insurance.Api.Models;
 using Insurance.Api.Models.Responses;
@@ -12,11 +12,23 @@ using Microsoft.Extensions.Options;
 
 namespace Insurance.Api.Controllers
 {
+    /// <summary>
+    /// Home controller of Insurance Api.
+    /// </summary>
+    [Route("api/insurance")]
     public class HomeController : BaseController<HomeController>
     {
         private readonly IInsuranceDataAccess insuranceDataAccess;
         private readonly IBusinessRules businessRules;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HomeController"/>.
+        /// </summary>
+        /// <param name="appConfiguration">Application configuration.</param>
+        /// <param name="logger">Logger instance.</param>
+        /// <param name="insuranceDataAccess">Data access instance for data persistense.</param>
+        /// <param name="businessRules">An instance <see cref="IBusinessRules"/> for
+        /// calculating insurance values.</param>
         public HomeController(IOptions<AppConfiguration> appConfiguration, ILogger<HomeController> logger,
             IInsuranceDataAccess insuranceDataAccess, IBusinessRules businessRules)
             : base(appConfiguration, logger)
@@ -25,8 +37,15 @@ namespace Insurance.Api.Controllers
             this.businessRules = businessRules;
         }
 
+        /// <summary>
+        /// Calculates the insurance for the given request.
+        /// </summary>
+        /// <param name="toInsure">The request to calculate its instance.</param>
+        /// <returns>A <see cref="Task{CalculateProductInsuranceResponse}"/> including the
+        /// instance value calculated for the given request.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
         [HttpPost]
-        [Route("api/insurance/product")]
+        [Route("product")]
         public async Task<CalculateProductInsuranceResponse> CalculateProductInsurance([FromBody] InsuranceDto toInsure)
         {
             if (toInsure == null)
@@ -45,8 +64,15 @@ namespace Insurance.Api.Controllers
             return response;
         }
 
+        /// <summary>
+        /// Calculates the insurance for the given order.
+        /// </summary>
+        /// <param name="orderInsuranceDto">Order request to calculate its insurance.</param>
+        /// <returns>A <see cref="Task{CalculateOrderInsuranceResonse}"/> including the
+        /// insurance value for the given order.</returns>
+        /// <exception cref="ArgumentException"></exception>
         [HttpPost]
-        [Route("api/insurance/order")]
+        [Route("order")]
         public async Task<CalculateOrderInsuranceResponse> CalculateOrderInsurance([FromBody] OrderInsuranceDto orderInsuranceDto)
         {
             if (orderInsuranceDto == null)
@@ -64,8 +90,13 @@ namespace Insurance.Api.Controllers
             return response;
         }
 
+        /// <summary>
+        /// Updates the surcharge rate for 
+        /// </summary>
+        /// <param name="surcharges">The surcharge rates to be updated.</param>
+        /// <returns>A <see cref="Task"/> to await the operation.</returns>
         [HttpPut]
-        [Route("api/insurance/surcharge")]
+        [Route("surcharge")]
         public async Task SetProductTypeSurcharges([FromBody] ProductTypeSurcharge[] surcharges)
         {
             await insuranceDataAccess.UpdateProductTypeSurcharges(surcharges).ConfigureAwait(false);

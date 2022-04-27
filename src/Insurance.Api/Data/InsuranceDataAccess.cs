@@ -4,11 +4,15 @@ using Insurance.Api.Models;
 
 namespace Insurance.Api.Data
 {
+    /// <summary>
+    /// Provides data operations for the insurance.
+    /// </summary>
     public class InsuranceDataAccess : IInsuranceDataAccess
     {
         private ConcurrentDictionary<int, ProductTypeSurcharge> productTypeSurcharges =
             new ConcurrentDictionary<int, ProductTypeSurcharge>();
 
+        /// <inheritdoc />
         public Task UpdateProductTypeSurcharges(ProductTypeSurcharge[] surcharges)
         {
             foreach (var item in surcharges)
@@ -27,6 +31,7 @@ namespace Insurance.Api.Data
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task<float?> GetSurchargeByProductTypeId(int productTypeId)
         {
             if (productTypeSurcharges.TryGetValue(productTypeId, out var productTypeSurcharge))
