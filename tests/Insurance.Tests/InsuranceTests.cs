@@ -18,6 +18,8 @@ using Insurance.Api.Business;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Insurance.Api.Models.Responses;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Xunit.Abstractions;
 
 namespace Insurance.Tests
@@ -198,7 +200,7 @@ namespace Insurance.Tests
             InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
             BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
 
-            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules, productApiClient);
 
             var result = await sut.CalculateProductInsurance(dto);
 
@@ -249,11 +251,6 @@ namespace Insurance.Tests
                 {
                     ProductTypeId = 4,
                     Surcharge = 0.4f,
-                },
-                new ProductTypeSurcharge()
-                {
-                    ProductTypeId = 7,
-                    Surcharge = 0.25f,
                 }
             };
 
@@ -294,7 +291,7 @@ namespace Insurance.Tests
                 ProductApiClient productApiClient = new ProductApiClient(factory.Object);
                 BusinessRules businessRules = new BusinessRules(productApiClient, dataAccess);
 
-                var sut = new HomeController(configs, logger, dataAccess, businessRules);
+                var sut = new HomeController(configs, logger, dataAccess, businessRules, productApiClient);
 
                 var random = new Random();
                 var surcharges = new ProductTypeSurcharge[]
@@ -353,7 +350,7 @@ namespace Insurance.Tests
             InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
             BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
 
-            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules, productApiClient);
 
             var surcharge = new[]
             {
@@ -375,7 +372,7 @@ namespace Insurance.Tests
         }
         
         [Fact]
-        public async Task UpdateProductTypeSurcharge_GivenProductTypeIdDoesntExist_ThrowError()
+        public async Task UpdateProductTypeSurcharge_GivenProductTypeIdDoesntExist_ShouldReturn422StatusCode()
         {
             InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
             
@@ -389,10 +386,15 @@ namespace Insurance.Tests
             ProductApiClient productApiClient = new ProductApiClient(factory.Object);
             BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
 
-            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules, productApiClient);
 
             var surcharges = new[]
             {
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 1,
+                    Surcharge = 0.2f,
+                },
                 new ProductTypeSurcharge()
                 {
                     ProductTypeId = 100000,
@@ -400,7 +402,14 @@ namespace Insurance.Tests
                 },
             };
 
-            await Assert.ThrowsAsync<ArgumentException>(() => sut.SetProductTypeSurcharges(surcharges));
+           var response = await sut.SetProductTypeSurcharges(surcharges);
+
+           var result = response as IStatusCodeActionResult;
+
+           var actual = result.StatusCode;
+           var expected = StatusCodes.Status422UnprocessableEntity;
+
+           Assert.Equal(expected, actual);
         }
 
         private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
@@ -425,7 +434,7 @@ namespace Insurance.Tests
             InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
             BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
 
-            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules, productApiClient);
 
             if (productTypeSurcharges != null)
             {

@@ -1,7 +1,8 @@
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Insurance.Api.Extensions;
 using Insurance.Api.Models;
-using Newtonsoft.Json;
 
 namespace Insurance.Api.Clients
 {
@@ -23,8 +24,8 @@ namespace Insurance.Api.Clients
         public async Task<ProductType> GetProductTypeById(int productTypeId)
         {
             HttpClient client = CreateClient();
-            string json = await client.GetStringAsync($"/product_types/{productTypeId}").ConfigureAwait(false);
-            var productType = JsonConvert.DeserializeObject<ProductType>(json);
+            var requestUri = $"/product_types/{productTypeId}";
+            var productType = await client.GetAsync<ProductType>(requestUri).ConfigureAwait(false);
             return productType;
         }
 
@@ -32,9 +33,18 @@ namespace Insurance.Api.Clients
         public async Task<Product> GetProductById(int productId)
         {
             HttpClient client = CreateClient();
-            string json = await client.GetStringAsync($"/products/{productId}").ConfigureAwait(false);
-            var product = JsonConvert.DeserializeObject<Product>(json);
+            var requestUri = $"/products/{productId}";
+            var product = await client.GetAsync<Product>(requestUri).ConfigureAwait(false);
             return product;
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<ProductType>> GetProductTypes()
+        {
+            HttpClient client = CreateClient();
+            var requestUri = $"/product_types";
+            var productTypes = await client.GetAsync<IEnumerable<ProductType>>(requestUri).ConfigureAwait(false);
+            return productTypes;
         }
 
         /// <summary>

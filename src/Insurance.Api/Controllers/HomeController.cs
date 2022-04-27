@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Insurance.Api.Business;
+using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Insurance.Api.Models;
 using Insurance.Api.Models.Responses;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,6 +23,7 @@ namespace Insurance.Api.Controllers
     {
         private readonly IInsuranceDataAccess insuranceDataAccess;
         private readonly IBusinessRules businessRules;
+        private readonly IProductApiClient productApiClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HomeController"/>.
@@ -30,11 +34,12 @@ namespace Insurance.Api.Controllers
         /// <param name="businessRules">An instance <see cref="IBusinessRules"/> for
         /// calculating insurance values.</param>
         public HomeController(IOptions<AppConfiguration> appConfiguration, ILogger<HomeController> logger,
-            IInsuranceDataAccess insuranceDataAccess, IBusinessRules businessRules)
+            IInsuranceDataAccess insuranceDataAccess, IBusinessRules businessRules, IProductApiClient productApiClient)
             : base(appConfiguration, logger)
         {
             this.insuranceDataAccess = insuranceDataAccess;
             this.businessRules = businessRules;
+            this.productApiClient = productApiClient;
         }
 
         /// <summary>
@@ -94,12 +99,26 @@ namespace Insurance.Api.Controllers
         /// Updates the surcharge rate for 
         /// </summary>
         /// <param name="surcharges">The surcharge rates to be updated.</param>
-        /// <returns>A <see cref="Task"/> to await the operation.</returns>
+        /// <returns>A <see cref="Task{IActionResult}"/> containing the
+        /// response of operation.</returns>
         [HttpPut]
         [Route("surcharge")]
-        public async Task SetProductTypeSurcharges([FromBody] ProductTypeSurcharge[] surcharges)
+        public async Task<IActionResult> SetProductTypeSurcharges([FromBody] ProductTypeSurcharge[] surcharges)
         {
+            IEnumerable<ProductType> productTypes = await productApiClient.GetProductTypes().ConfigureAwait(false);
+
+            var invalidItems = surcharges.Where(x => productTypes.All(p => p.Id != x.ProductTypeId)).ToArray();
+
+            if (invalidItems.Any())
+            {
+                var message =
+                    $"Some ProductTypeIds are invalid: {String.Join(", ", invalidItems.Select(x => x.ProductTypeId))}";
+                return this.StatusCode(StatusCodes.Status422UnprocessableEntity, message);
+            }
+            
             await insuranceDataAccess.UpdateProductTypeSurcharges(surcharges).ConfigureAwait(false);
+
+            return Ok();
         }
 
         public class InsuranceDto

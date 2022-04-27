@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Insurance.Api.Models;
 
@@ -24,5 +25,11 @@ namespace Insurance.Api.Clients
         /// for the given id.</returns>
         Task<Product> GetProductById(int productId);
 
+        /// <summary>
+        /// Gets the list of product types.
+        /// </summary>
+        /// <returns>A <see cref="Task{IEnumerable{ProductType}}"/> including the list of
+        /// product types.</returns>
+        Task<IEnumerable<ProductType>> GetProductTypes();
     }
 }
