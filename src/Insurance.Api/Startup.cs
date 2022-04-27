@@ -50,6 +50,8 @@ namespace Insurance.Api
             services.AddSingleton<IBusinessRules, BusinessRules>();
             services.AddSingleton<IProductApiClient, ProductApiClient>();
             services.AddSingleton<IInsuranceDataAccess, InsuranceDataAccess>();
+
+            services.AddSwaggerGen();
         }
 
         private static void AddFaultTolerancePolicy(IHttpClientBuilder httpClientBuilder, IOptions<AppConfiguration>? appConfiguration)
@@ -109,6 +111,9 @@ namespace Insurance.Api
                     });
                 });
             }
+
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
             app.UseHttpsRedirection();
 
