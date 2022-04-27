@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Insurance.Api.Controllers;
 using Insurance.Api.Models;
 using Microsoft.AspNetCore.Builder;
@@ -14,12 +15,16 @@ using System.Net.Http;
 using Moq;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Text;
+using System.Text.Unicode;
+using Insurance.Api;
 using Insurance.Api.Business;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Insurance.Api.Models.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Xunit.Abstractions;
 
 namespace Insurance.Tests
@@ -370,12 +375,12 @@ namespace Insurance.Tests
                 actual: result.InsuranceValue
             );
         }
-        
+
         [Fact]
         public async Task UpdateProductTypeSurcharge_GivenProductTypeIdDoesntExist_ShouldReturn422StatusCode()
         {
             InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
-            
+
             var clinet = new HttpClient();
             clinet.BaseAddress = new Uri(this._fixture.ApiUrl);
 
@@ -402,14 +407,55 @@ namespace Insurance.Tests
                 },
             };
 
-           var response = await sut.SetProductTypeSurcharges(surcharges);
+            var response = await sut.SetProductTypeSurcharges(surcharges);
 
-           var result = response as IStatusCodeActionResult;
+            var result = response as IStatusCodeActionResult;
 
-           var actual = result.StatusCode;
-           var expected = StatusCodes.Status422UnprocessableEntity;
+            var actual = result.StatusCode;
+            var expected = StatusCodes.Status422UnprocessableEntity;
 
-           Assert.Equal(expected, actual);
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void TestStartup()
+        {
+            var json = @"{
+
+  ""AllowedHosts"": ""*"",
+  ""ProductApi"": ""http://localhost:5010"",
+  
+  ""FaultTolerance"":
+  {
+    ""RetryPolicyEnabled"": true,
+    ""RetryCount"": 3,
+    
+    ""CircuitBreakerEnabled"": true,
+    ""DurationOfBreakInSeconds"": 30,
+    ""HandledEventsAllowedBeforeBreaking"": 5
+  }
+}";
+            using MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            IHost host = null;
+            try
+            {
+                host = new HostBuilder()
+                    .ConfigureAppConfiguration(config =>
+                    {
+                        config.AddJsonStream(memoryStream);
+                    })
+                    .ConfigureWebHostDefaults(
+                        b => b.UseUrls("http://localhost:5010")
+                            .UseStartup<Startup>()
+                    )
+                    .Build();
+
+                host.Start();
+            }
+            finally
+            {
+                host?.Dispose();
+            }
         }
 
         private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
