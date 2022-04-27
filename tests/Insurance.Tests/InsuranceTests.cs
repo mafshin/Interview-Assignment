@@ -269,19 +269,19 @@ namespace Insurance.Tests
         public async Task UpdateProductTypeSurcharge_ConcurrentUsers()
         {
             InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
-            
+
             var ratesCollection = new float[][]
             {
                 new float[] {0.1f, 0.2f, 0.3f},
                 new float[] {0.11f, 0.22f, 0.33f}
             };
-            
+
             var updateTasks = Enumerable.Range(0, 100)
                 .Select(x => Task.Run(() => UpdateSurcharge(insuranceDataAccess)));
-            
+
             // Simulate concurrent updates
             await Task.WhenAll(updateTasks);
-            
+
             async Task UpdateSurcharge(IInsuranceDataAccess dataAccess)
             {
                 var clinet = new HttpClient();
@@ -322,12 +322,12 @@ namespace Insurance.Tests
 
                 foreach (var surcharge in surcharges)
                 {
-                  var rate =   await insuranceDataAccess.GetSurchargeByProductTypeId(surcharge.ProductTypeId);
+                    var rate = await insuranceDataAccess.GetSurchargeByProductTypeId(surcharge.ProductTypeId);
 
-                  // Check if surcharge rate is one of supplied values
-                  _testOutputHelper.WriteLine($"ProductTypeId: {surcharge.ProductTypeId}, Rate: {rate}");
-                  Assert.True(rate == ratesCollection[0][surcharge.ProductTypeId - 1] ||
-                              rate == ratesCollection[1][surcharge.ProductTypeId - 1]);
+                    // Check if surcharge rate is one of supplied values
+                    _testOutputHelper.WriteLine($"ProductTypeId: {surcharge.ProductTypeId}, Rate: {rate}");
+                    Assert.True(rate == ratesCollection[0][surcharge.ProductTypeId - 1] ||
+                                rate == ratesCollection[1][surcharge.ProductTypeId - 1]);
                 }
             }
         }
@@ -372,6 +372,35 @@ namespace Insurance.Tests
                 expected: expectedInsuranceValue,
                 actual: result.InsuranceValue
             );
+        }
+        
+        [Fact]
+        public async Task UpdateProductTypeSurcharge_GivenProductTypeIdDoesntExist_ThrowError()
+        {
+            InsuranceDataAccess insuranceDataAccess = new InsuranceDataAccess();
+            
+            var clinet = new HttpClient();
+            clinet.BaseAddress = new Uri(this._fixture.ApiUrl);
+
+            Mock<IHttpClientFactory> factory = new Mock<IHttpClientFactory>();
+            factory.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(clinet);
+
+            ProductApiClient productApiClient = new ProductApiClient(factory.Object);
+            BusinessRules businessRules = new BusinessRules(productApiClient, insuranceDataAccess);
+
+            var sut = new HomeController(configs, logger, insuranceDataAccess, businessRules);
+
+            var surcharges = new[]
+            {
+                new ProductTypeSurcharge()
+                {
+                    ProductTypeId = 100000,
+                    Surcharge = 0.2f
+                },
+            };
+
+            await Assert.ThrowsAsync<ArgumentException>(() => sut.SetProductTypeSurcharges(surcharges));
         }
 
         private async Task<CalculateOrderInsuranceResponse> CalculateOrderInsuranceResponse(
