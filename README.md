@@ -44,3 +44,6 @@ Access to ProductApi resources is configured by two retry and circuit breaker po
 In case of ProductApi getting down or slowness the policies can be configured to retry
 requests or break the circuit to prevent cascade effect of retrying failed requests. 
 These policies can be configured via `FaultTolerance` section in [appsettings.json](/src/Insurance.Api/appsettings.json)
+
+# Response Caching
+A configurable in memory cache is added to cache responses from product api.

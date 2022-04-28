@@ -2,6 +2,7 @@ using System;
 using System.Net.Http;
 using System.Net.Mime;
 using Insurance.Api.Business;
+using Insurance.Api.Cache;
 using Insurance.Api.Clients;
 using Insurance.Api.Data;
 using Microsoft.AspNetCore.Builder;
@@ -50,6 +51,17 @@ namespace Insurance.Api
             services.AddSingleton<IBusinessRules, BusinessRules>();
             services.AddSingleton<IProductApiClient, ProductApiClient>();
             services.AddSingleton<IInsuranceDataAccess, InsuranceDataAccess>();
+
+            if (appConfiguration.Value.ResponseCachingEnabled)
+            {
+                CacheOptions catchOptions = new CacheOptions()
+                {
+                    DefaultExpirationInMilliseconds = appConfiguration.Value.ResponseCacheExpirationInMilliseconds
+                };
+                services.AddSingleton(catchOptions);
+                services.AddMemoryCache();
+                services.AddSingleton<ICache, MemoryCache>();
+            }
 
             services.AddSwaggerGen();
         }
