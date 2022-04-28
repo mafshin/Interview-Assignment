@@ -31,9 +31,10 @@ namespace Insurance.Api.Controllers
         /// </summary>
         /// <param name="appConfiguration">Application configuration.</param>
         /// <param name="logger">Logger instance.</param>
-        /// <param name="insuranceDataAccess">Data access instance for data persistense.</param>
+        /// <param name="insuranceDataAccess">Data access instance for data persistence.</param>
         /// <param name="businessRules">An instance <see cref="IBusinessRules"/> for
         /// calculating insurance values.</param>
+        /// <param name="productApiClient">Client for accessing Product Api.</param>
         public HomeController(IOptions<AppConfiguration> appConfiguration, ILogger<HomeController> logger,
             IInsuranceDataAccess insuranceDataAccess, IBusinessRules businessRules, IProductApiClient productApiClient)
             : base(appConfiguration, logger)
@@ -64,7 +65,8 @@ namespace Insurance.Api.Controllers
 
             if (product is null)
             {
-                return  StatusCode(StatusCodes.Status422UnprocessableEntity, $"Product with id '{toInsure.ProductId}' does not exist");
+                return StatusCode(StatusCodes.Status422UnprocessableEntity,
+                    new ErrorResponse($"Product with id '{toInsure.ProductId}' does not exist"));
             }
 
             ProductInfoDto productInfoDto = new ProductInfoDto()
@@ -109,8 +111,8 @@ namespace Insurance.Api.Controllers
 
             if (invalidProducts.Any())
             {
-                return StatusCode(StatusCodes.Status422UnprocessableEntity,
-                    $"Some product ids are invalid: {(string.Join(", ", invalidProducts))}");
+                return StatusCode(StatusCodes.Status422UnprocessableEntity, new ErrorResponse(
+                    $"Some product ids are invalid: {(string.Join(", ", invalidProducts))}"));
             }
 
             OrderInsuranceDto dto = new OrderInsuranceDto()
@@ -155,7 +157,7 @@ namespace Insurance.Api.Controllers
             {
                 var message =
                     $"Some ProductTypeIds are invalid: {String.Join(", ", invalidItems.Select(x => x.ProductTypeId))}";
-                return this.StatusCode(StatusCodes.Status422UnprocessableEntity, message);
+                return this.StatusCode(StatusCodes.Status422UnprocessableEntity, new ErrorResponse(message));
             }
 
             await insuranceDataAccess.UpdateProductTypeSurcharges(surcharges).ConfigureAwait(false);
